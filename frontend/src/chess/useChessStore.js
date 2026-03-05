@@ -32,6 +32,9 @@ export const useChessStore = create((set, get) => ({
   // ── Result ───────────────────────────────────────────────────
   gameOver: null, // { result, method }
 
+  // ── Draw offer state ─────────────────────────────────────────
+  drawOffer: null, // null | 'sent' | 'received'
+
   // ── Preferences ──────────────────────────────────────────────
   showGuides: true,
 
@@ -159,7 +162,7 @@ export const useChessStore = create((set, get) => ({
         break;
       }
       case 'GAME_OVER': {
-        set({ gameOver: msg.payload });
+        set({ gameOver: msg.payload, drawOffer: null });
         break;
       }
       case 'ERROR': {
@@ -167,6 +170,14 @@ export const useChessStore = create((set, get) => ({
         setTimeout(() => {
           set((s) => (s.error === msg.payload.message ? { error: null } : {}));
         }, 4000);
+        break;
+      }
+      case 'DRAW_OFFERED': {
+        set({ drawOffer: 'received' });
+        break;
+      }
+      case 'DRAW_DECLINED': {
+        set({ drawOffer: null });
         break;
       }
       default:
@@ -247,6 +258,27 @@ export const useChessStore = create((set, get) => ({
     set({ promotionPending: null });
   },
 
+  // ── Resign / Draw ────────────────────────────────────────────
+
+  resign: () => {
+    get()._sendMessage('RESIGN');
+  },
+
+  offerDraw: () => {
+    get()._sendMessage('DRAW_OFFER');
+    set({ drawOffer: 'sent' });
+  },
+
+  acceptDraw: () => {
+    get()._sendMessage('DRAW_ACCEPT');
+    set({ drawOffer: null });
+  },
+
+  declineDraw: () => {
+    get()._sendMessage('DRAW_DECLINE');
+    set({ drawOffer: null });
+  },
+
   // ── Navigation ───────────────────────────────────────────────
 
   backToLobby: () => {
@@ -254,6 +286,7 @@ export const useChessStore = create((set, get) => ({
       screen: 'lobby',
       gameState: null,
       gameOver: null,
+      drawOffer: null,
       selectedSquare: null,
       legalMoves: [],
       lastMove: null,

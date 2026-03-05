@@ -6,15 +6,19 @@ export default function GameOverModal({ result, method, playerColor, onClose }) 
 
   let title = 'Draw';
   let subtitle = '';
+  let icon = '⚖';
 
   if (isDraw) {
     title = 'Draw';
+    icon = '⚖';
     subtitle = formatMethod(method);
   } else if (isWinner) {
     title = 'Victory';
+    icon = '♔';
     subtitle = formatMethod(method);
   } else {
     title = 'Defeat';
+    icon = '♚';
     subtitle = formatMethod(method);
   }
 
@@ -31,7 +35,7 @@ export default function GameOverModal({ result, method, playerColor, onClose }) 
 
         {/* Result Icon */}
         <div className="text-5xl mb-3">
-          {isDraw ? '⚖' : isWinner ? '♔' : '♚'}
+          {icon}
         </div>
 
         {/* Title */}
@@ -62,11 +66,14 @@ export default function GameOverModal({ result, method, playerColor, onClose }) 
 
 function formatMethod(method) {
   const labels = {
-    checkmate: 'By Checkmate',
-    stalemate: 'By Stalemate',
+    checkmate:             'By Checkmate',
+    stalemate:             'By Stalemate',
     insufficient_material: 'Insufficient Material',
-    threefold_repetition: 'Threefold Repetition',
-    fifty_move_rule: 'Fifty-Move Rule',
+    threefold_repetition:  'Threefold Repetition',
+    fifty_move_rule:       'Fifty-Move Rule',
+    resignation:           'By Resignation',
+    agreement:             'By Mutual Agreement',
+    opponent_left:         'Opponent Abandoned the Game',
   };
   return labels[method] || method || '';
 }

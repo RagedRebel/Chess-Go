@@ -9,14 +9,34 @@ export default function Lobby() {
   const createRoom   = useChessStore((s) => s.createRoom);
   const joinRoom     = useChessStore((s) => s.joinRoom);
 
-  const [roomCode, setRoomCode] = useState('');
+  const [roomCode, setRoomCode]   = useState('');
   const [playerName, setPlayerName] = useState('');
+  const [nameError, setNameError]   = useState(false);
   const [mode, setMode] = useState(null); // null | 'create' | 'join'
+
+  const trimmedName = playerName.trim();
+
+  const handleNameBlur = () => {
+    if (!trimmedName) setNameError(true);
+  };
+
+  const handleNameChange = (e) => {
+    setPlayerName(e.target.value);
+    if (e.target.value.trim()) setNameError(false);
+  };
+
+  const validateAndRun = (fn) => {
+    if (!trimmedName) {
+      setNameError(true);
+      return;
+    }
+    fn();
+  };
 
   const handleJoin = (e) => {
     e.preventDefault();
     if (roomCode.trim().length > 0) {
-      joinRoom(roomCode.trim(), playerName.trim());
+      joinRoom(roomCode.trim(), trimmedName);
     }
   };
 
@@ -51,19 +71,29 @@ export default function Lobby() {
           {/* Player Name */}
           <div className="w-full">
             <label className="block font-cinzel text-[11px] uppercase tracking-widest text-navy/60 mb-1.5 text-center">
-              Your Name
+              Your Name <span className="text-burgundy">*</span>
             </label>
             <input
               type="text"
               value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Enter your name"
+              onChange={handleNameChange}
+              onBlur={handleNameBlur}
+              placeholder="Enter your name to play"
               maxLength={20}
-              className="w-full text-center font-playfair text-base bg-white/60 border border-gold/30
-                         rounded px-4 py-2.5 text-navy placeholder:text-stone-gray/40
-                         focus:outline-none focus:border-gold focus:shadow-gold-glow
-                         transition-all duration-250 ease-dignified"
+              className={`w-full text-center font-playfair text-base bg-white/60 border rounded px-4 py-2.5 text-navy
+                         placeholder:text-stone-gray/40 focus:outline-none focus:shadow-gold-glow
+                         transition-all duration-250 ease-dignified
+                         ${
+                           nameError
+                             ? 'border-burgundy/70 focus:border-burgundy'
+                             : 'border-gold/30 focus:border-gold'
+                         }`}
             />
+            {nameError && (
+              <p className="mt-1.5 text-center font-garamond text-xs text-burgundy animate-fade-in">
+                A name is required before you can play.
+              </p>
+            )}
           </div>
 
           {/* Move Guidelines Toggle */}
@@ -88,17 +118,17 @@ export default function Lobby() {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <button
-              onClick={() => {
+              onClick={() => validateAndRun(() => {
                 setMode('create');
-                createRoom(playerName.trim());
-              }}
+                createRoom(trimmedName);
+              })}
               disabled={!connected}
               className="stone-btn flex-1"
             >
               Create Room
             </button>
             <button
-              onClick={() => setMode('join')}
+              onClick={() => validateAndRun(() => setMode('join'))}
               disabled={!connected}
               className="stone-btn flex-1"
             >

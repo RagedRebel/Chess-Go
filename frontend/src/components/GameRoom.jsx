@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useChessStore } from '../chess/useChessStore';
 import ChessBoard from './ChessBoard';
 import PlayerInfo from './PlayerInfo';
@@ -17,8 +17,14 @@ export default function GameRoom() {
   const showGuides  = useChessStore((s) => s.showGuides);
   const toggleGuides = useChessStore((s) => s.toggleGuides);
   const backToLobby  = useChessStore((s) => s.backToLobby);
+  const resign       = useChessStore((s) => s.resign);
+  const offerDraw    = useChessStore((s) => s.offerDraw);
+  const acceptDraw   = useChessStore((s) => s.acceptDraw);
+  const declineDraw  = useChessStore((s) => s.declineDraw);
+  const drawOffer    = useChessStore((s) => s.drawOffer);
 
   const boardWrapperRef = useRef(null);
+  const [resignConfirm, setResignConfirm] = useState(false);
 
   if (!gameState) return null;
 
@@ -97,10 +103,79 @@ export default function GameRoom() {
       </div>
 
       {/* ── Bottom bar ───────────────────────────────────── */}
-      <div className="flex-shrink-0 flex items-center justify-center gap-4 mt-1">
+      <div className="flex-shrink-0 flex items-center justify-center gap-2 mt-1 flex-wrap">
         <button onClick={backToLobby} className="stone-btn-secondary text-[11px] py-1.5 px-4">
           Leave Room
         </button>
+
+        {started && !gameOver && (
+          <>
+            {/* Resign button — two-step confirm */}
+            {resignConfirm ? (
+              <>
+                <span className="font-cinzel text-[10px] text-burgundy uppercase tracking-wide">Resign?</span>
+                <button
+                  onClick={() => { resign(); setResignConfirm(false); }}
+                  className="text-[11px] py-1.5 px-3 rounded border border-burgundy/60 bg-burgundy/10
+                             text-burgundy font-cinzel hover:bg-burgundy/20 transition-all duration-200"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setResignConfirm(false)}
+                  className="stone-btn-secondary text-[11px] py-1.5 px-3"
+                >
+                  No
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setResignConfirm(true)}
+                className="text-[11px] py-1.5 px-4 rounded border border-stone-gray/40 bg-stone-gray/10
+                           text-stone-gray font-cinzel hover:border-burgundy/50 hover:text-burgundy
+                           hover:bg-burgundy/10 transition-all duration-200"
+              >
+                Resign
+              </button>
+            )}
+
+            {/* Draw offer button */}
+            {drawOffer === 'received' ? (
+              <>
+                <span className="font-cinzel text-[10px] text-gold/90 uppercase tracking-wide animate-pulse">
+                  Draw offered
+                </span>
+                <button
+                  onClick={acceptDraw}
+                  className="text-[11px] py-1.5 px-3 rounded border border-gold/50 bg-gold/10
+                             text-gold font-cinzel hover:bg-gold/20 transition-all duration-200"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={declineDraw}
+                  className="stone-btn-secondary text-[11px] py-1.5 px-3"
+                >
+                  Decline
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={offerDraw}
+                disabled={drawOffer === 'sent'}
+                className={`text-[11px] py-1.5 px-4 rounded border font-cinzel transition-all duration-200
+                  ${
+                    drawOffer === 'sent'
+                      ? 'border-gold/30 bg-gold/5 text-gold/50 cursor-not-allowed'
+                      : 'border-gold/40 bg-gold/10 text-gold/80 hover:border-gold hover:text-gold hover:bg-gold/20'
+                  }`}
+              >
+                {drawOffer === 'sent' ? 'Draw Offered…' : 'Offer Draw'}
+              </button>
+            )}
+          </>
+        )}
+
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <div className="relative">
             <input

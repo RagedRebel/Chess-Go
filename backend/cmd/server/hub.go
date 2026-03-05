@@ -22,12 +22,18 @@ var upgrader = websocket.Upgrader{
 // --- Message Types ---
 
 const (
-	MsgCreateRoom = "CREATE_ROOM"
-	MsgJoinRoom   = "JOIN_ROOM"
-	MsgMove       = "MOVE"
-	MsgGameState  = "GAME_STATE"
-	MsgGameOver   = "GAME_OVER"
-	MsgError      = "ERROR"
+	MsgCreateRoom  = "CREATE_ROOM"
+	MsgJoinRoom    = "JOIN_ROOM"
+	MsgMove        = "MOVE"
+	MsgResign      = "RESIGN"
+	MsgDrawOffer   = "DRAW_OFFER"
+	MsgDrawAccept  = "DRAW_ACCEPT"
+	MsgDrawDecline = "DRAW_DECLINE"
+	MsgGameState   = "GAME_STATE"
+	MsgGameOver    = "GAME_OVER"
+	MsgDrawOffered = "DRAW_OFFERED"  // server → client: opponent offered draw
+	MsgDrawDeclined = "DRAW_DECLINED" // server → client: opponent declined draw
+	MsgError       = "ERROR"
 )
 
 // --- Message Structures ---
@@ -90,11 +96,12 @@ type Client struct {
 // --- Room ---
 
 type Room struct {
-	Code  string
-	Game  *ChessGame
-	White *Client
-	Black *Client
-	mu    sync.Mutex
+	Code          string
+	Game          *ChessGame
+	White         *Client
+	Black         *Client
+	DrawOfferedBy string // "" | "white" | "black"
+	mu            sync.Mutex
 }
 
 // --- Hub ---
@@ -119,17 +126,31 @@ func (h *Hub) Run() {
 			h.mu.Lock()
 			if room, ok := h.Rooms[client.RoomCode]; ok {
 				room.mu.Lock()
+
+				var opponent *Client
 				if room.White == client {
 					room.White = nil
-				}
-				if room.Black == client {
+					opponent = room.Black
+				} else if room.Black == client {
 					room.Black = nil
+					opponent = room.White
 				}
+
 				if room.White == nil && room.Black == nil {
 					delete(h.Rooms, client.RoomCode)
 					log.Printf("Room %s deleted (empty)", client.RoomCode)
+				} else if opponent != nil && !room.Game.IsGameOver() {
+					// Opponent left during an active game — remaining player wins
+					gameOverPayload := GameOverPayload{
+						Result: opponent.Color,
+						Method: "opponent_left",
+						FEN:    room.Game.FEN(),
+					}
+					log.Printf("Room %s: %s wins — opponent left", room.Code, opponent.Color)
+					opponent.sendGameOver(gameOverPayload)
+					delete(h.Rooms, room.Code)
 				} else {
-					// Notify remaining player
+					// Game not yet started; just update state
 					notifyRoomState(room)
 				}
 				room.mu.Unlock()
@@ -239,6 +260,14 @@ func (c *Client) handleMessage(msg WSMessage) {
 			return
 		}
 		c.handleMove(payload)
+	case MsgResign:
+		c.handleResign()
+	case MsgDrawOffer:
+		c.handleDrawOffer()
+	case MsgDrawAccept:
+		c.handleDrawAccept()
+	case MsgDrawDecline:
+		c.handleDrawDecline()
 	default:
 		c.sendError("Unknown message type: " + msg.Type)
 	}
@@ -456,6 +485,119 @@ func (c *Client) sendJSON(msgType string, payload interface{}) {
 	case c.Send <- data:
 	default:
 		log.Printf("Client %s send buffer full, dropping message", c.ID)
+	}
+}
+
+// --- Resign / Draw Handlers ---
+
+func (c *Client) handleResign() {
+	c.Hub.mu.RLock()
+	room, exists := c.Hub.Rooms[c.RoomCode]
+	c.Hub.mu.RUnlock()
+	if !exists {
+		c.sendError("You are not in a room")
+		return
+	}
+
+	room.mu.Lock()
+	defer room.mu.Unlock()
+
+	if room.Game.IsGameOver() {
+		return
+	}
+
+	winner := "black"
+	if c.Color == "black" {
+		winner = "white"
+	}
+
+	payload := GameOverPayload{Result: winner, Method: "resignation", FEN: room.Game.FEN()}
+	log.Printf("Room %s: %s resigned", room.Code, c.Color)
+	if room.White != nil {
+		room.White.sendGameOver(payload)
+	}
+	if room.Black != nil {
+		room.Black.sendGameOver(payload)
+	}
+}
+
+func (c *Client) handleDrawOffer() {
+	c.Hub.mu.RLock()
+	room, exists := c.Hub.Rooms[c.RoomCode]
+	c.Hub.mu.RUnlock()
+	if !exists {
+		c.sendError("You are not in a room")
+		return
+	}
+
+	room.mu.Lock()
+	defer room.mu.Unlock()
+
+	if room.Game.IsGameOver() || room.White == nil || room.Black == nil {
+		return
+	}
+
+	room.DrawOfferedBy = c.Color
+
+	var opponent *Client
+	if c.Color == "white" {
+		opponent = room.Black
+	} else {
+		opponent = room.White
+	}
+	if opponent != nil {
+		opponent.sendJSON(MsgDrawOffered, map[string]string{})
+	}
+}
+
+func (c *Client) handleDrawAccept() {
+	c.Hub.mu.RLock()
+	room, exists := c.Hub.Rooms[c.RoomCode]
+	c.Hub.mu.RUnlock()
+	if !exists {
+		return
+	}
+
+	room.mu.Lock()
+	defer room.mu.Unlock()
+
+	if room.DrawOfferedBy == "" || room.DrawOfferedBy == c.Color {
+		return // no pending offer, or accepting own offer
+	}
+
+	room.DrawOfferedBy = ""
+	payload := GameOverPayload{Result: "draw", Method: "agreement", FEN: room.Game.FEN()}
+	log.Printf("Room %s: Draw agreed", room.Code)
+	if room.White != nil {
+		room.White.sendGameOver(payload)
+	}
+	if room.Black != nil {
+		room.Black.sendGameOver(payload)
+	}
+}
+
+func (c *Client) handleDrawDecline() {
+	c.Hub.mu.RLock()
+	room, exists := c.Hub.Rooms[c.RoomCode]
+	c.Hub.mu.RUnlock()
+	if !exists {
+		return
+	}
+
+	room.mu.Lock()
+	defer room.mu.Unlock()
+
+	room.DrawOfferedBy = ""
+
+	// Notify the offerer that draw was declined
+	var offerer *Client
+	if c.Color == "white" {
+		offerer = room.Black
+	} else {
+		offerer = room.White
+	}
+	if offerer != nil {
+		offerer.sendJSON(MsgDrawDeclined, map[string]string{})
 	}
 }
 
