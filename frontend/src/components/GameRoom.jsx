@@ -46,20 +46,20 @@ export default function GameRoom() {
       {/* ── Top bar ─────────────────────────────────────── */}
       <div className="flex-shrink-0 flex items-center justify-center gap-4 mb-1 animate-fade-in">
         <div className="flex items-center gap-2">
-          <span className="font-cinzel text-[10px] uppercase tracking-widest text-stone-gray">Room</span>
-          <span className="font-cinzel text-sm tracking-[0.2em] text-navy bg-white/50 border border-gold/30 px-3 py-0.5 rounded">
+          <span className="font-cinzel text-[10px] uppercase tracking-widest text-alabaster/40">Room</span>
+          <span className="font-cinzel text-sm tracking-[0.2em] text-alabaster bg-navy/70 border border-gold/30 px-3 py-0.5 rounded">
             {roomCode}
           </span>
         </div>
         {!started && (
-          <span className="font-playfair text-xs italic text-stone-gray">
+          <span className="font-playfair text-xs italic text-alabaster/50">
             Share this code with your opponent…
           </span>
         )}
         {started && !gameOver && (
-          <span className="font-playfair text-xs text-navy/70">
+          <span className="font-playfair text-xs text-alabaster/60">
             {isMyTurn
-              ? <span className="text-burgundy font-semibold">Your move</span>
+              ? <span className="text-gold font-semibold">Your move</span>
               : <span>Opponent is thinking…</span>}
             {inCheck && <span className="ml-1.5 text-burgundy font-bold">— Check!</span>}
           </span>
@@ -131,8 +131,8 @@ export default function GameRoom() {
             ) : (
               <button
                 onClick={() => setResignConfirm(true)}
-                className="text-[11px] py-1.5 px-4 rounded border border-stone-gray/40 bg-stone-gray/10
-                           text-stone-gray font-cinzel hover:border-burgundy/50 hover:text-burgundy
+                className="text-[11px] py-1.5 px-4 rounded border border-alabaster/20 bg-alabaster/5
+                           text-alabaster/60 font-cinzel hover:border-burgundy/60 hover:text-burgundy
                            hover:bg-burgundy/10 transition-all duration-200"
               >
                 Resign
@@ -184,10 +184,10 @@ export default function GameRoom() {
               onChange={(e) => toggleGuides(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-8 h-4 bg-stone-gray/30 rounded-full peer-checked:bg-gold/60 transition-colors duration-250" />
-            <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow peer-checked:translate-x-4 transition-transform duration-250" />
+            <div className="w-8 h-4 bg-alabaster/20 rounded-full peer-checked:bg-gold/60 transition-colors duration-250" />
+            <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-alabaster rounded-full shadow peer-checked:translate-x-4 transition-transform duration-250" />
           </div>
-          <span className="font-garamond text-[11px] text-navy/60">Guides</span>
+          <span className="font-garamond text-[11px] text-alabaster/50">Guides</span>
         </label>
       </div>
 

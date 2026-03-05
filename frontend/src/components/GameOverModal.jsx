@@ -23,10 +23,11 @@ export default function GameOverModal({ result, method, playerColor, onClose }) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/50 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian/85 backdrop-blur-sm animate-fade-in">
       <div
-        className="relative bg-alabaster border-2 border-gold/50 rounded-lg shadow-stone-lg
+        className="relative bg-navy border border-gold/40 rounded-lg shadow-stone-lg
                     px-10 py-10 max-w-sm w-full mx-4 text-center animate-slide-up"
+        style={{ boxShadow: '0 0 60px rgba(197,160,89,0.12), 0 20px 60px rgba(0,0,0,0.7)' }}
       >
         {/* Laurel Wreath Frame */}
         <div className="flex justify-center mb-4">
@@ -39,12 +40,12 @@ export default function GameOverModal({ result, method, playerColor, onClose }) 
         </div>
 
         {/* Title */}
-        <h2 className="font-cinzel text-3xl font-bold text-navy tracking-wider mb-1">
+        <h2 className="font-cinzel text-3xl font-bold text-alabaster tracking-wider mb-1">
           {title}
         </h2>
 
         {/* Subtitle / Method */}
-        <p className="font-playfair text-stone-gray italic text-sm mb-6">
+        <p className="font-playfair text-alabaster/60 italic text-sm mb-6">
           {subtitle}
         </p>
 

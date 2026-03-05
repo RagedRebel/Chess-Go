@@ -15,51 +15,51 @@
   }
 
   ::selection {
-    background-color: rgba(212, 175, 55, 0.25);
-    color: #1B2A4A;
+    background-color: rgba(197, 160, 89, 0.35);
+    color: #E8E2D6;
   }
 }
 
 @layer components {
-  /* ---- Marble Background ---- */
+  /* ---- Dark Obsidian Background ---- */
   .marble-bg {
-    background-color: #F5F0E8;
+    background-color: #0D0D0D;
     background-image:
-      /* Subtle veining */
-      radial-gradient(ellipse at 20% 50%, rgba(200, 190, 175, 0.25) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(180, 170, 155, 0.2) 0%, transparent 40%),
-      radial-gradient(ellipse at 50% 80%, rgba(190, 180, 165, 0.15) 0%, transparent 45%),
-      /* Fine grain */
+      /* Deep atmospheric depth layers */
+      radial-gradient(ellipse at 20% 30%, rgba(20, 27, 45, 0.6) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 70%, rgba(20, 27, 45, 0.4) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 50%, rgba(197, 160, 89, 0.03) 0%, transparent 60%),
+      /* Barely-visible texture grain */
       repeating-linear-gradient(
         105deg,
         transparent,
         transparent 80px,
-        rgba(160, 150, 135, 0.04) 80px,
-        rgba(160, 150, 135, 0.04) 81px
+        rgba(197, 160, 89, 0.015) 80px,
+        rgba(197, 160, 89, 0.015) 81px
       ),
       repeating-linear-gradient(
         170deg,
         transparent,
         transparent 120px,
-        rgba(170, 160, 145, 0.03) 120px,
-        rgba(170, 160, 145, 0.03) 121px
+        rgba(255, 255, 255, 0.008) 120px,
+        rgba(255, 255, 255, 0.008) 121px
       );
   }
 
-  /* ---- Stone Buttons ---- */
+  /* ---- Stone Buttons (Dark) ---- */
   .stone-btn {
     @apply font-cinzel font-semibold tracking-widest uppercase text-sm
            px-8 py-3 rounded
-           text-navy bg-gradient-to-b from-alabaster to-[#E8E0D4]
-           border border-gold/40
+           text-alabaster bg-gradient-to-b from-navy to-[#0E1420]
+           border border-gold/50
            shadow-stone
            transition-all duration-300 ease-dignified
-           disabled:opacity-40 disabled:cursor-not-allowed;
+           disabled:opacity-35 disabled:cursor-not-allowed;
   }
 
   .stone-btn:hover:not(:disabled) {
-    @apply shadow-gold-glow border-gold/70;
-    background-image: linear-gradient(to bottom, #FAF5EC, #F0E8DA);
+    @apply shadow-gold-glow border-gold;
+    background-image: linear-gradient(to bottom, #1a2440, #0E1420);
   }
 
   .stone-btn:active:not(:disabled) {
@@ -73,11 +73,11 @@
            text-stone-gray bg-transparent
            border border-stone-gray/30
            transition-all duration-300 ease-dignified
-           disabled:opacity-40 disabled:cursor-not-allowed;
+           disabled:opacity-35 disabled:cursor-not-allowed;
   }
 
   .stone-btn-secondary:hover:not(:disabled) {
-    @apply text-navy border-stone-gray/60 bg-white/40;
+    @apply text-alabaster border-stone-gray/60 bg-navy/50;
   }
 
   /* ---- Board Frame ---- */
@@ -97,7 +97,7 @@
     content: '';
     position: absolute;
     inset: 4px;
-    border: 1px solid rgba(212, 175, 55, 0.2);
+    border: 1px solid rgba(197, 160, 89, 0.25);
     border-radius: 2px;
     pointer-events: none;
   }

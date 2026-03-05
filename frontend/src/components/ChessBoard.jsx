@@ -92,7 +92,7 @@ export default function ChessBoard({ boardWrapperRef }) {
         {/* Board */}
         <div
           className="relative rounded-sm overflow-hidden"
-          style={{ boxShadow: 'inset 0 0 0 1px rgba(212,175,55,0.15)' }}
+          style={{ boxShadow: 'inset 0 0 0 1px rgba(197,160,89,0.18)' }}
         >
           <div
             className="grid"
@@ -114,11 +114,11 @@ export default function ChessBoard({ boardWrapperRef }) {
                 // ── Square background ──
                 let bg;
                 if (selected) {
-                  bg = 'rgba(212, 175, 55, 0.45)';
+                  bg = 'rgba(197, 160, 89, 0.45)';
                 } else if (inCheck) {
                   bg = 'rgba(180, 40, 50, 0.65)';
                 } else if (lastMv) {
-                  bg = isLight ? 'rgba(212, 175, 55, 0.25)' : 'rgba(212, 175, 55, 0.30)';
+                  bg = isLight ? 'rgba(197, 160, 89, 0.25)' : 'rgba(197, 160, 89, 0.30)';
                 } else {
                   bg = isLight ? '#F0D9B5' : '#8B4513';
                 }
@@ -146,7 +146,7 @@ export default function ChessBoard({ boardWrapperRef }) {
                           className="absolute inset-0 z-10 pointer-events-none rounded-sm"
                           style={{
                             background:
-                              'radial-gradient(circle, transparent 60%, rgba(212,175,55,0.50) 61%)',
+                              'radial-gradient(circle, transparent 60%, rgba(197,160,89,0.50) 61%)',
                           }}
                         />
                       ) : (
@@ -155,7 +155,7 @@ export default function ChessBoard({ boardWrapperRef }) {
                           style={{
                             width: squareSize * 0.3,
                             height: squareSize * 0.3,
-                            backgroundColor: 'rgba(212, 175, 55, 0.55)',
+                            backgroundColor: 'rgba(197, 160, 89, 0.55)',
                           }}
                         />
                       ))}

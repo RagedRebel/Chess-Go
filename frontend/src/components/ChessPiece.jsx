@@ -25,7 +25,7 @@ export default function ChessPiece({ type, color, size = 42 }) {
         fontSize: size,
         lineHeight: 1,
         display: 'block',
-        color: isWhite ? '#FAF5EC' : '#1B2A4A',
+        color: isWhite ? '#E8E2D6' : '#141B2D',
         textShadow: isWhite
           ? '0 1px 3px rgba(0,0,0,0.55), 0 0 1px rgba(0,0,0,0.8)'
           : '0 1px 3px rgba(0,0,0,0.35)',

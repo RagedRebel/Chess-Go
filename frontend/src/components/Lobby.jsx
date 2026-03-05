@@ -45,10 +45,10 @@ export default function Lobby() {
       {/* Title */}
       <div className="text-center mb-6 animate-fade-in">
         <LaurelWreath className="mx-auto mb-3 w-20 h-20 text-gold" />
-        <h1 className="font-cinzel text-4xl md:text-5xl font-bold text-navy tracking-wider">
+        <h1 className="font-cinzel text-4xl md:text-5xl font-bold text-alabaster tracking-wider">
           ChessGo
         </h1>
-        <p className="font-playfair text-stone-gray text-base mt-1.5 italic">
+        <p className="font-playfair text-alabaster/50 text-base mt-1.5 italic">
           A Neoclassical Chess Experience
         </p>
       </div>
@@ -60,7 +60,7 @@ export default function Lobby() {
             connected ? 'bg-green-500' : 'bg-red-500'
           }`}
         />
-        <span className="font-garamond text-sm text-stone-gray">
+        <span className="font-garamond text-sm text-alabaster/50">
           {connected ? 'Connected to server' : 'Connecting…'}
         </span>
       </div>
@@ -70,7 +70,7 @@ export default function Lobby() {
         <div className="flex flex-col items-center gap-5 animate-slide-up w-full max-w-xs">
           {/* Player Name */}
           <div className="w-full">
-            <label className="block font-cinzel text-[11px] uppercase tracking-widest text-navy/60 mb-1.5 text-center">
+            <label className="block font-cinzel text-[11px] uppercase tracking-widest text-alabaster/50 mb-1.5 text-center">
               Your Name <span className="text-burgundy">*</span>
             </label>
             <input
@@ -80,8 +80,8 @@ export default function Lobby() {
               onBlur={handleNameBlur}
               placeholder="Enter your name to play"
               maxLength={20}
-              className={`w-full text-center font-playfair text-base bg-white/60 border rounded px-4 py-2.5 text-navy
-                         placeholder:text-stone-gray/40 focus:outline-none focus:shadow-gold-glow
+              className={`w-full text-center font-playfair text-base bg-navy/60 border rounded px-4 py-2.5 text-alabaster
+                         placeholder:text-alabaster/30 focus:outline-none focus:shadow-gold-glow
                          transition-all duration-250 ease-dignified
                          ${
                            nameError
@@ -105,12 +105,12 @@ export default function Lobby() {
                 onChange={(e) => toggleGuides(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-9 h-5 bg-stone-gray/30 rounded-full peer-checked:bg-gold/60
+              <div className="w-9 h-5 bg-alabaster/20 rounded-full peer-checked:bg-gold/60
                               transition-colors duration-250 ease-dignified" />
-              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow
+              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-alabaster rounded-full shadow
                               peer-checked:translate-x-4 transition-transform duration-250 ease-dignified" />
             </div>
-            <span className="font-garamond text-sm text-navy/70 group-hover:text-navy transition-colors duration-200">
+            <span className="font-garamond text-sm text-alabaster/60 group-hover:text-alabaster transition-colors duration-200">
               Show valid moves
             </span>
           </label>
@@ -144,7 +144,7 @@ export default function Lobby() {
           onSubmit={handleJoin}
           className="flex flex-col items-center gap-4 animate-slide-up"
         >
-          <label className="font-cinzel text-sm uppercase tracking-widest text-navy/70">
+          <label className="font-cinzel text-sm uppercase tracking-widest text-alabaster/70">
             Enter Room Code
           </label>
           <input
@@ -153,8 +153,8 @@ export default function Lobby() {
             onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
             placeholder="e.g. A3K9Z2"
             maxLength={6}
-            className="w-48 text-center font-cinzel text-2xl tracking-[0.3em] bg-white/60 border-2 border-gold/40
-                       rounded px-4 py-3 text-navy placeholder:text-stone-gray/50
+            className="w-48 text-center font-cinzel text-2xl tracking-[0.3em] bg-navy/60 border-2 border-gold/40
+                       rounded px-4 py-3 text-alabaster placeholder:text-alabaster/30
                        focus:outline-none focus:border-gold focus:shadow-gold-glow
                        transition-all duration-250 ease-dignified"
             autoFocus

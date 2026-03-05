@@ -8,7 +8,7 @@ export default function PlayerInfo({ name, color, isActive, position }) {
       className={`flex items-center gap-2 px-4 py-1.5 rounded transition-all duration-350 ease-dignified
         ${isActive
           ? 'bg-gold/10 border border-gold/40 shadow-gold-glow'
-          : 'bg-white/30 border border-transparent'
+          : 'bg-navy/40 border border-white/5'
         }
         ${position === 'top' ? 'mb-0.5' : 'mt-0.5'}
       `}
@@ -19,10 +19,10 @@ export default function PlayerInfo({ name, color, isActive, position }) {
         {pieceIcon}
       </span>
 
-      <span className="font-cinzel text-xs font-semibold text-navy tracking-wide">
+      <span className="font-cinzel text-xs font-semibold text-alabaster tracking-wide">
         {name}
       </span>
-      <span className="font-garamond text-[10px] text-stone-gray capitalize">
+      <span className="font-garamond text-[10px] text-alabaster/50 capitalize">
         ({color})
       </span>
 
