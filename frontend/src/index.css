@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ================================================================
+   NEOCLASSICAL CHESS — Custom Styles
+   Marble textures, stone buttons, board frame, decorative motifs
+   ================================================================ */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: rgba(212, 175, 55, 0.25);
+    color: #1B2A4A;
+  }
+}
+
+@layer components {
+  /* ---- Marble Background ---- */
+  .marble-bg {
+    background-color: #F5F0E8;
+    background-image:
+      /* Subtle veining */
+      radial-gradient(ellipse at 20% 50%, rgba(200, 190, 175, 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(180, 170, 155, 0.2) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 80%, rgba(190, 180, 165, 0.15) 0%, transparent 45%),
+      /* Fine grain */
+      repeating-linear-gradient(
+        105deg,
+        transparent,
+        transparent 80px,
+        rgba(160, 150, 135, 0.04) 80px,
+        rgba(160, 150, 135, 0.04) 81px
+      ),
+      repeating-linear-gradient(
+        170deg,
+        transparent,
+        transparent 120px,
+        rgba(170, 160, 145, 0.03) 120px,
+        rgba(170, 160, 145, 0.03) 121px
+      );
+  }
+
+  /* ---- Stone Buttons ---- */
+  .stone-btn {
+    @apply font-cinzel font-semibold tracking-widest uppercase text-sm
+           px-8 py-3 rounded
+           text-navy bg-gradient-to-b from-alabaster to-[#E8E0D4]
+           border border-gold/40
+           shadow-stone
+           transition-all duration-300 ease-dignified
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .stone-btn:hover:not(:disabled) {
+    @apply shadow-gold-glow border-gold/70;
+    background-image: linear-gradient(to bottom, #FAF5EC, #F0E8DA);
+  }
+
+  .stone-btn:active:not(:disabled) {
+    @apply shadow-none;
+    transform: translateY(1px);
+  }
+
+  .stone-btn-secondary {
+    @apply font-cinzel font-medium tracking-wider uppercase text-xs
+           px-6 py-2.5 rounded
+           text-stone-gray bg-transparent
+           border border-stone-gray/30
+           transition-all duration-300 ease-dignified
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .stone-btn-secondary:hover:not(:disabled) {
+    @apply text-navy border-stone-gray/60 bg-white/40;
+  }
+
+  /* ---- Board Frame ---- */
+  .board-frame {
+    padding: 10px;
+    background: linear-gradient(145deg, #6B4226, #4A2E18, #5C3A1A);
+    border-radius: 4px;
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    position: relative;
+  }
+
+  /* Subtle inlay border effect */
+  .board-frame::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+}
+
+@layer utilities {
+  .text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+}
