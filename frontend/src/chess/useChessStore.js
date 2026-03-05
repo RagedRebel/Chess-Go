@@ -34,6 +34,7 @@ export const useChessStore = create((set, get) => ({
 
   // ── Draw offer state ─────────────────────────────────────────
   drawOffer: null, // null | 'sent' | 'received'
+  drawDeclined: false, // true briefly when opponent declines our offer
 
   // ── Preferences ──────────────────────────────────────────────
   showGuides: true,
@@ -177,7 +178,8 @@ export const useChessStore = create((set, get) => ({
         break;
       }
       case 'DRAW_DECLINED': {
-        set({ drawOffer: null });
+        const wasOfferer = get().drawOffer === 'sent';
+        set({ drawOffer: null, drawDeclined: wasOfferer });
         break;
       }
       default:
@@ -279,6 +281,8 @@ export const useChessStore = create((set, get) => ({
     set({ drawOffer: null });
   },
 
+  clearDrawDeclined: () => set({ drawDeclined: false }),
+
   // ── Navigation ───────────────────────────────────────────────
 
   backToLobby: () => {
@@ -287,6 +291,7 @@ export const useChessStore = create((set, get) => ({
       gameState: null,
       gameOver: null,
       drawOffer: null,
+      drawDeclined: false,
       selectedSquare: null,
       legalMoves: [],
       lastMove: null,
