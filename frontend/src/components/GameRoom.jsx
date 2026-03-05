@@ -1,37 +1,29 @@
-import { useMemo, useRef } from 'react';
-import { Chess } from 'chess.js';
+import { useRef } from 'react';
+import { useChessStore } from '../chess/useChessStore';
 import ChessBoard from './ChessBoard';
 import PlayerInfo from './PlayerInfo';
 import GameOverModal from './GameOverModal';
 import Column from './Column';
 
-export default function GameRoom({ gameState, gameOver, onMove, onBackToLobby, showGuides, onToggleGuides }) {
-  if (!gameState) return null;
+export default function GameRoom() {
+  const roomCode    = useChessStore((s) => s.roomCode);
+  const playerColor = useChessStore((s) => s.playerColor);
+  const turn        = useChessStore((s) => s.turn);
+  const white       = useChessStore((s) => s.white);
+  const black       = useChessStore((s) => s.black);
+  const started     = useChessStore((s) => s.started);
+  const gameOver    = useChessStore((s) => s.gameOver);
+  const gameState   = useChessStore((s) => s.gameState);
+  const showGuides  = useChessStore((s) => s.showGuides);
+  const toggleGuides = useChessStore((s) => s.toggleGuides);
+  const backToLobby  = useChessStore((s) => s.backToLobby);
 
-  const {
-    fen,
-    turn,
-    roomCode,
-    white,
-    black,
-    playerColor,
-    started,
-  } = gameState;
-
-  // ref for the board wrapper — ChessBoard watches its size
   const boardWrapperRef = useRef(null);
 
-  // Derive check status client-side via chess.js
-  const inCheck = useMemo(() => {
-    try {
-      const g = new Chess(fen);
-      return g.isCheck();
-    } catch {
-      return false;
-    }
-  }, [fen]);
+  if (!gameState) return null;
 
-  const isMyTurn = turn === playerColor?.[0];
+  const inCheck = gameState.status === 'check';
+  const isMyTurn = turn === (playerColor === 'white' ? 'w' : 'b');
 
   const topPlayer =
     playerColor === 'white'
@@ -43,8 +35,7 @@ export default function GameRoom({ gameState, gameOver, onMove, onBackToLobby, s
       : { name: black || 'You', color: 'black' };
 
   return (
-    // Full viewport, flex column, NO overflow
-    <div className="h-screen w-screen flex flex-col overflow-hidden py-2 px-4 box-border">
+    <div className="h-full w-full flex flex-col overflow-hidden py-2 px-4 box-border">
 
       {/* ── Top bar ─────────────────────────────────────── */}
       <div className="flex-shrink-0 flex items-center justify-center gap-4 mb-1 animate-fade-in">
@@ -69,15 +60,14 @@ export default function GameRoom({ gameState, gameOver, onMove, onBackToLobby, s
         )}
       </div>
 
-      {/* ── Middle row — takes all remaining height ────── */}
+      {/* ── Middle row ────────────────────────────────────── */}
       <div className="flex-1 min-h-0 flex items-center justify-center gap-2 lg:gap-6 overflow-hidden">
 
         <div className="hidden lg:flex flex-shrink-0 self-center">
           <Column side="left" />
         </div>
 
-        {/* Board column — fills available height */}
-        <div className="flex flex-col items-center h-full py-1 overflow-hidden">
+        <div className="flex flex-col items-center h-full py-1 overflow-hidden max-w-[560px] w-full">
           <div className="flex-shrink-0">
             <PlayerInfo
               name={topPlayer.name}
@@ -87,18 +77,8 @@ export default function GameRoom({ gameState, gameOver, onMove, onBackToLobby, s
             />
           </div>
 
-          {/* Board wrapper — flex-1 so it takes remaining column height */}
           <div ref={boardWrapperRef} className="flex-1 min-h-0 w-full flex items-center justify-center">
-            <ChessBoard
-              fen={fen}
-              playerColor={playerColor}
-              onMove={onMove}
-              isMyTurn={isMyTurn}
-              gameStarted={started}
-              gameOver={!!gameOver}
-              showGuides={showGuides}
-              boardWrapperRef={boardWrapperRef}
-            />
+            <ChessBoard boardWrapperRef={boardWrapperRef} />
           </div>
 
           <div className="flex-shrink-0">
@@ -118,7 +98,7 @@ export default function GameRoom({ gameState, gameOver, onMove, onBackToLobby, s
 
       {/* ── Bottom bar ───────────────────────────────────── */}
       <div className="flex-shrink-0 flex items-center justify-center gap-4 mt-1">
-        <button onClick={onBackToLobby} className="stone-btn-secondary text-[11px] py-1.5 px-4">
+        <button onClick={backToLobby} className="stone-btn-secondary text-[11px] py-1.5 px-4">
           Leave Room
         </button>
         <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -126,7 +106,7 @@ export default function GameRoom({ gameState, gameOver, onMove, onBackToLobby, s
             <input
               type="checkbox"
               checked={showGuides}
-              onChange={(e) => onToggleGuides(e.target.checked)}
+              onChange={(e) => toggleGuides(e.target.checked)}
               className="sr-only peer"
             />
             <div className="w-8 h-4 bg-stone-gray/30 rounded-full peer-checked:bg-gold/60 transition-colors duration-250" />
@@ -141,7 +121,7 @@ export default function GameRoom({ gameState, gameOver, onMove, onBackToLobby, s
           result={gameOver.result}
           method={gameOver.method}
           playerColor={playerColor}
-          onClose={onBackToLobby}
+          onClose={backToLobby}
         />
       )}
     </div>

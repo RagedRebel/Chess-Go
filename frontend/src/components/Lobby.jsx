@@ -1,7 +1,14 @@
 import { useState } from 'react';
+import { useChessStore } from '../chess/useChessStore';
 import LaurelWreath from './LaurelWreath';
 
-export default function Lobby({ connected, onCreateRoom, onJoinRoom, showGuides, onToggleGuides }) {
+export default function Lobby() {
+  const connected    = useChessStore((s) => s.connected);
+  const showGuides   = useChessStore((s) => s.showGuides);
+  const toggleGuides = useChessStore((s) => s.toggleGuides);
+  const createRoom   = useChessStore((s) => s.createRoom);
+  const joinRoom     = useChessStore((s) => s.joinRoom);
+
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [mode, setMode] = useState(null); // null | 'create' | 'join'
@@ -9,7 +16,7 @@ export default function Lobby({ connected, onCreateRoom, onJoinRoom, showGuides,
   const handleJoin = (e) => {
     e.preventDefault();
     if (roomCode.trim().length > 0) {
-      onJoinRoom(roomCode.trim(), playerName.trim());
+      joinRoom(roomCode.trim(), playerName.trim());
     }
   };
 
@@ -65,7 +72,7 @@ export default function Lobby({ connected, onCreateRoom, onJoinRoom, showGuides,
               <input
                 type="checkbox"
                 checked={showGuides}
-                onChange={(e) => onToggleGuides(e.target.checked)}
+                onChange={(e) => toggleGuides(e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-9 h-5 bg-stone-gray/30 rounded-full peer-checked:bg-gold/60
@@ -83,7 +90,7 @@ export default function Lobby({ connected, onCreateRoom, onJoinRoom, showGuides,
             <button
               onClick={() => {
                 setMode('create');
-                onCreateRoom(playerName.trim());
+                createRoom(playerName.trim());
               }}
               disabled={!connected}
               className="stone-btn flex-1"

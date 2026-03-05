@@ -1,32 +1,16 @@
-import { useState } from 'react';
-import useWebSocket from './hooks/useWebSocket';
+import { useEffect } from 'react';
+import { useChessStore } from './chess/useChessStore';
 import Lobby from './components/Lobby';
 import GameRoom from './components/GameRoom';
 
 export default function App() {
-  const {
-    connected,
-    gameState,
-    gameOver,
-    error,
-    createRoom,
-    joinRoom,
-    makeMove,
-    resetGame,
-  } = useWebSocket();
+  const screen = useChessStore((s) => s.screen);
+  const error  = useChessStore((s) => s.error);
 
-  const [view, setView] = useState('lobby'); // 'lobby' | 'game'
-  const [showGuides, setShowGuides] = useState(true);
-
-  // Transition to game view when we receive game state
-  if (gameState && view === 'lobby') {
-    setView('game');
-  }
-
-  const handleBackToLobby = () => {
-    resetGame();
-    setView('lobby');
-  };
+  // Open WebSocket on mount, close on unmount
+  useEffect(() => {
+    return useChessStore.getState().connect();
+  }, []);
 
   return (
     <div className="h-screen overflow-hidden marble-bg flex flex-col">
@@ -39,24 +23,7 @@ export default function App() {
         </div>
       )}
 
-      {view === 'lobby' ? (
-        <Lobby
-          connected={connected}
-          onCreateRoom={createRoom}
-          onJoinRoom={joinRoom}
-          showGuides={showGuides}
-          onToggleGuides={setShowGuides}
-        />
-      ) : (
-        <GameRoom
-          gameState={gameState}
-          gameOver={gameOver}
-          onMove={makeMove}
-          onBackToLobby={handleBackToLobby}
-          showGuides={showGuides}
-          onToggleGuides={setShowGuides}
-        />
-      )}
+      {screen === 'lobby' ? <Lobby /> : <GameRoom />}
     </div>
   );
 }

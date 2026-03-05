@@ -1,180 +1,26 @@
-import { useMemo, useState, useCallback, useEffect } from 'react';
-import { Chessboard } from 'react-chessboard';
-import { Chess } from 'chess.js';
+import { useMemo, useState, useEffect } from 'react';
+import { useChessStore } from '../chess/useChessStore';
+import ChessPiece from './ChessPiece';
+import PromotionModal from './PromotionModal';
 
-export default function ChessBoard({
-  fen,
-  playerColor,
-  onMove,
-  isMyTurn,
-  gameStarted,
-  gameOver,
-  showGuides,
-  boardWrapperRef,
-}) {
-  // chess.js instance for client-side pre-validation and move highlighting
-  const game = useMemo(() => {
-    try {
-      return new Chess(fen);
-    } catch {
-      return new Chess();
-    }
-  }, [fen]);
+const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
-  const boardOrientation = playerColor === 'black' ? 'black' : 'white';
-  const canInteract = gameStarted && isMyTurn && !gameOver;
+export default function ChessBoard({ boardWrapperRef }) {
+  // ── Store state ──────────────────────────────────────────────
+  const gameState       = useChessStore((s) => s.gameState);
+  const selectedSquare  = useChessStore((s) => s.selectedSquare);
+  const legalMoves      = useChessStore((s) => s.legalMoves);
+  const promotionPending = useChessStore((s) => s.promotionPending);
+  const lastMove        = useChessStore((s) => s.lastMove);
+  const playerColor     = useChessStore((s) => s.playerColor);
+  const showGuides      = useChessStore((s) => s.showGuides);
+  const selectSquare    = useChessStore((s) => s.selectSquare);
 
-  // --- Move guidelines state ---
-  const [selectedSquare, setSelectedSquare] = useState(null);
-  const [legalMoves, setLegalMoves] = useState([]);
+  const board = gameState?.board;
+  const flipped = playerColor === 'black';
 
-  // Reset selection when FEN changes (after a move)
-  useEffect(() => {
-    setSelectedSquare(null);
-    setLegalMoves([]);
-  }, [fen]);
-
-  // Compute legal target squares for clicked/dragged piece
-  const highlightMoves = useCallback(
-    (square) => {
-      if (!showGuides || !canInteract) {
-        setLegalMoves([]);
-        return;
-      }
-
-      const moves = game.moves({ square, verbose: true });
-      if (moves.length === 0) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
-
-      setSelectedSquare(square);
-      setLegalMoves(moves.map((m) => m.to));
-    },
-    [game, showGuides, canInteract]
-  );
-
-  // Build custom square styles for guidelines
-  const guideStyles = useMemo(() => {
-    const styles = {};
-    if (!showGuides || legalMoves.length === 0) return styles;
-
-    // Highlight selected square
-    if (selectedSquare) {
-      styles[selectedSquare] = {
-        backgroundColor: 'rgba(212, 175, 55, 0.35)',
-      };
-    }
-
-    // Dot indicators on legal target squares
-    for (const sq of legalMoves) {
-      const hasPiece = game.get(sq);
-      if (hasPiece) {
-        // Capture: ring around square
-        styles[sq] = {
-          background:
-            'radial-gradient(circle, transparent 60%, rgba(212, 175, 55, 0.45) 61%)',
-        };
-      } else {
-        // Empty: small dot
-        styles[sq] = {
-          background:
-            'radial-gradient(circle, rgba(212, 175, 55, 0.5) 22%, transparent 23%)',
-        };
-      }
-    }
-    return styles;
-  }, [showGuides, selectedSquare, legalMoves, game]);
-
-  function onSquareClick(square) {
-    if (!canInteract || !showGuides) return;
-
-    // If clicking a legal target → make the move
-    if (selectedSquare && legalMoves.includes(square)) {
-      // Check promotion
-      const piece = game.get(selectedSquare);
-      const isPromotion =
-        piece &&
-        piece.type === 'p' &&
-        ((piece.color === 'w' && square[1] === '8') ||
-          (piece.color === 'b' && square[1] === '1'));
-
-      if (!isPromotion) {
-        try {
-          const move = game.move({ from: selectedSquare, to: square });
-          if (move) {
-            onMove(selectedSquare, square, '');
-          }
-        } catch {
-          // ignore
-        }
-      }
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
-
-    // Otherwise, select the clicked square
-    highlightMoves(square);
-  }
-
-  function onPieceDragBegin(_piece, sourceSquare) {
-    highlightMoves(sourceSquare);
-  }
-
-  function onPieceDrop(sourceSquare, targetSquare, piece) {
-    if (!canInteract) return false;
-
-    // Promotion is handled by onPromotionPieceSelect
-    const isPromotion =
-      (piece === 'wP' && targetSquare[1] === '8') ||
-      (piece === 'bP' && targetSquare[1] === '1');
-
-    if (isPromotion) return true;
-
-    // Pre-validate with chess.js
-    try {
-      const move = game.move({ from: sourceSquare, to: targetSquare });
-      if (!move) return false;
-    } catch {
-      return false;
-    }
-
-    onMove(sourceSquare, targetSquare, '');
-    setSelectedSquare(null);
-    setLegalMoves([]);
-    return true;
-  }
-
-  function onPromotionCheck(sourceSquare, targetSquare, piece) {
-    if (!canInteract) return false;
-    return (
-      (piece === 'wP' && targetSquare[1] === '8') ||
-      (piece === 'bP' && targetSquare[1] === '1')
-    );
-  }
-
-  function onPromotionPieceSelect(piece, promoteFromSquare, promoteToSquare) {
-    if (!piece || !promoteFromSquare || !promoteToSquare) return false;
-    const promo = piece[1].toLowerCase();
-    try {
-      const move = game.move({
-        from: promoteFromSquare,
-        to: promoteToSquare,
-        promotion: promo,
-      });
-      if (!move) return false;
-    } catch {
-      return false;
-    }
-    onMove(promoteFromSquare, promoteToSquare, promo);
-    setSelectedSquare(null);
-    setLegalMoves([]);
-    return true;
-  }
-
-  // --- Board size: observe the wrapper div provided by GameRoom ---
+  // ── Responsive sizing ────────────────────────────────────────
   const [boardSize, setBoardSize] = useState(360);
 
   useEffect(() => {
@@ -183,47 +29,177 @@ export default function ChessBoard({
 
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
-      // Use the smaller of the two dimensions, leave 20px for the frame padding
-      const available = Math.min(width, height) - 20;
+      const vpCap = Math.min(window.innerWidth, window.innerHeight) - 160;
+      const available = Math.min(width, height, vpCap) - 20;
       setBoardSize(Math.max(Math.min(Math.floor(available), 520), 200));
     });
-
     observer.observe(el);
     return () => observer.disconnect();
   }, [boardWrapperRef]);
 
+  const squareSize = boardSize / 8;
+  const labelSize = Math.max(14, squareSize * 0.28);
+
+  // ── Display order (flip for black) ───────────────────────────
+  const displayRows = useMemo(
+    () => (flipped ? [...Array(8).keys()].reverse() : [...Array(8).keys()]),
+    [flipped],
+  );
+  const displayCols = useMemo(
+    () => (flipped ? [...Array(8).keys()].reverse() : [...Array(8).keys()]),
+    [flipped],
+  );
+
+  // ── Helpers ──────────────────────────────────────────────────
+  const isSelected = (r, c) =>
+    selectedSquare?.row === r && selectedSquare?.col === c;
+
+  const isLegalTarget = (r, c) =>
+    legalMoves.some((m) => m.row === r && m.col === c);
+
+  const isLastMove = (r, c) =>
+    (lastMove?.from.row === r && lastMove?.from.col === c) ||
+    (lastMove?.to.row === r && lastMove?.to.col === c);
+
+  const isKingInCheck = (r, c) => {
+    const piece = board?.[r]?.[c];
+    return (
+      piece?.type === 'king' &&
+      piece.color === gameState?.currentTurn &&
+      gameState?.status === 'check'
+    );
+  };
+
+  if (!board) return null;
+
+  // ── Render ───────────────────────────────────────────────────
   return (
-    <div className="board-frame">
-      <Chessboard
-        id="main-board"
-        position={fen}
-        onPieceDrop={onPieceDrop}
-        onSquareClick={onSquareClick}
-        onPieceDragBegin={onPieceDragBegin}
-        onPromotionCheck={onPromotionCheck}
-        onPromotionPieceSelect={onPromotionPieceSelect}
-        boardOrientation={boardOrientation}
-        arePiecesDraggable={canInteract}
-        animationDuration={200}
-        boardWidth={boardSize}
-        customSquareStyles={guideStyles}
-        customBoardStyle={{
-          borderRadius: '2px',
-        }}
-        customDarkSquareStyle={{
-          backgroundColor: '#8B4513',
-          backgroundImage:
-            'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%, rgba(0,0,0,0.06) 100%)',
-        }}
-        customLightSquareStyle={{
-          backgroundColor: '#F0D9B5',
-          backgroundImage:
-            'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(0,0,0,0.03) 100%)',
-        }}
-        customDropSquareStyle={{
-          boxShadow: 'inset 0 0 0 4px rgba(212,175,55,0.6)',
-        }}
-      />
+    <div className="board-frame relative flex flex-col items-center">
+      <div className="flex">
+        {/* Rank labels (left) */}
+        <div className="flex flex-col">
+          {displayRows.map((r) => (
+            <div
+              key={r}
+              className="flex items-center justify-center font-cinzel text-alabaster/50 select-none"
+              style={{ width: labelSize, height: squareSize, fontSize: Math.max(9, squareSize * 0.18) }}
+            >
+              {RANKS[r]}
+            </div>
+          ))}
+        </div>
+
+        {/* Board */}
+        <div
+          className="relative rounded-sm overflow-hidden"
+          style={{ boxShadow: 'inset 0 0 0 1px rgba(212,175,55,0.15)' }}
+        >
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `repeat(8, ${squareSize}px)`,
+              gridTemplateRows: `repeat(8, ${squareSize}px)`,
+            }}
+          >
+            {displayRows.map((row) =>
+              displayCols.map((col) => {
+                const isLight = (row + col) % 2 === 0;
+                const piece = board[row][col];
+                const selected = isSelected(row, col);
+                const legal = showGuides && isLegalTarget(row, col);
+                const lastMv = isLastMove(row, col);
+                const inCheck = isKingInCheck(row, col);
+                const hasPiece = !!piece;
+
+                // ── Square background ──
+                let bg;
+                if (selected) {
+                  bg = 'rgba(212, 175, 55, 0.45)';
+                } else if (inCheck) {
+                  bg = 'rgba(180, 40, 50, 0.65)';
+                } else if (lastMv) {
+                  bg = isLight ? 'rgba(212, 175, 55, 0.25)' : 'rgba(212, 175, 55, 0.30)';
+                } else {
+                  bg = isLight ? '#F0D9B5' : '#8B4513';
+                }
+
+                const grain = isLight
+                  ? 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(0,0,0,0.03) 100%)'
+                  : 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%, rgba(0,0,0,0.06) 100%)';
+
+                return (
+                  <div
+                    key={`${row}-${col}`}
+                    className="relative flex items-center justify-center cursor-pointer transition-colors duration-100"
+                    style={{
+                      width: squareSize,
+                      height: squareSize,
+                      backgroundColor: bg,
+                      backgroundImage: selected || inCheck || lastMv ? 'none' : grain,
+                    }}
+                    onClick={() => selectSquare({ row, col })}
+                  >
+                    {/* Legal-move indicator */}
+                    {legal &&
+                      (hasPiece ? (
+                        <div
+                          className="absolute inset-0 z-10 pointer-events-none rounded-sm"
+                          style={{
+                            background:
+                              'radial-gradient(circle, transparent 60%, rgba(212,175,55,0.50) 61%)',
+                          }}
+                        />
+                      ) : (
+                        <div
+                          className="absolute z-10 pointer-events-none rounded-full"
+                          style={{
+                            width: squareSize * 0.3,
+                            height: squareSize * 0.3,
+                            backgroundColor: 'rgba(212, 175, 55, 0.55)',
+                          }}
+                        />
+                      ))}
+
+                    {/* Piece */}
+                    {piece && (
+                      <div
+                        className={`relative z-20 transition-transform duration-100 ${
+                          selected ? 'scale-110' : 'hover:scale-105'
+                        }`}
+                      >
+                        <ChessPiece
+                          type={piece.type}
+                          color={piece.color}
+                          size={Math.max(20, squareSize * 0.72)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              }),
+            )}
+          </div>
+
+          {/* Promotion modal */}
+          {promotionPending && <PromotionModal />}
+        </div>
+
+        {/* Spacer */}
+        <div style={{ width: labelSize }} />
+      </div>
+
+      {/* File labels (bottom) */}
+      <div className="flex" style={{ marginLeft: labelSize }}>
+        {displayCols.map((c) => (
+          <div
+            key={c}
+            className="flex items-center justify-center font-cinzel text-alabaster/50 select-none"
+            style={{ width: squareSize, height: labelSize, fontSize: Math.max(9, squareSize * 0.18) }}
+          >
+            {FILES[c]}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
