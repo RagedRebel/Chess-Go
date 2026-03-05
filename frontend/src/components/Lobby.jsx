@@ -49,7 +49,7 @@ export default function Lobby() {
           ChessGo
         </h1>
         <p className="font-playfair text-alabaster/50 text-base mt-1.5 italic">
-          A Neoclassical Chess Experience
+          A Classy Chess Experience - Powered by Golang
         </p>
       </div>
 
@@ -96,7 +96,7 @@ export default function Lobby() {
             )}
           </div>
 
-          {/* Move Guidelines Toggle */}
+          {/* Move Guidelines Toggle
           <label className="flex items-center gap-2.5 cursor-pointer select-none group">
             <div className="relative">
               <input
@@ -113,7 +113,7 @@ export default function Lobby() {
             <span className="font-garamond text-sm text-alabaster/60 group-hover:text-alabaster transition-colors duration-200">
               Show valid moves
             </span>
-          </label>
+          </label> */}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
