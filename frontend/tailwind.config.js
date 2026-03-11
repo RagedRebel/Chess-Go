@@ -4,14 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        obsidian: '#0D0D0D',       // primary background
-        alabaster: '#E8E2D6',      // parchment white — text & light surfaces
-        'stone-gray': '#7A746A',   // muted secondary text
-        burgundy: '#9B3A4A',       // error / resign accents
-        navy: '#141B2D',           // midnight navy — cards / sections
-        gold: '#C5A059',           // antique gold — CTA, borders, active
-        'gold-light': '#D4B472',
-        'gold-dark': '#A8893A',
+        obsidian: '#F5EFE2',       // warm parchment page background
+        alabaster: '#261A0A',      // dark sepia — primary text
+        'stone-gray': '#7A705E',   // warm mid-brown — secondary text
+        burgundy: '#8B2030',       // rich crimson — error / resign
+        navy: '#FAF7F2',           // warm near-white — cards / panels
+        gold: '#96691A',           // deep antique gold — CTA, borders, active
+        'gold-light': '#A87A28',
+        'gold-dark': '#765214',
         cream: '#F0D9B5',          // chess light squares (unchanged)
         walnut: '#8B4513',         // chess dark squares (unchanged)
         mahogany: '#5C1A1B',
@@ -25,11 +25,11 @@ export default {
         garamond: ['EB Garamond', 'serif'],
       },
       boxShadow: {
-        'gold-glow': '0 0 15px rgba(197, 160, 89, 0.45)',
-        'gold-glow-lg': '0 0 28px rgba(197, 160, 89, 0.65)',
-        'stone': '0 4px 16px rgba(0, 0, 0, 0.5)',
-        'stone-lg': '0 8px 32px rgba(0, 0, 0, 0.65)',
-        'board': '0 8px 40px rgba(0, 0, 0, 0.6), inset 0 0 0 3px #5C3A1A',
+        'gold-glow': '0 0 15px rgba(150, 105, 26, 0.35)',
+        'gold-glow-lg': '0 0 28px rgba(150, 105, 26, 0.55)',
+        'stone': '0 4px 16px rgba(0, 0, 0, 0.10)',
+        'stone-lg': '0 8px 32px rgba(0, 0, 0, 0.16)',
+        'board': '0 8px 40px rgba(0, 0, 0, 0.22), inset 0 0 0 3px #5C3A1A',
       },
       transitionTimingFunction: {
         'dignified': 'cubic-bezier(0.4, 0, 0.2, 1)',

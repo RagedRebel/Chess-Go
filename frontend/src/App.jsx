@@ -17,7 +17,7 @@ export default function App() {
       {/* Error Toast */}
       {error && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
-          <div className="bg-burgundy/95 text-alabaster font-garamond px-6 py-2.5 rounded shadow-stone-lg border border-burgundy/60 text-sm tracking-wide">
+          <div className="bg-burgundy/95 text-white font-garamond px-6 py-2.5 rounded shadow-stone-lg border border-burgundy/60 text-sm tracking-wide">
             {error}
           </div>
         </div>

@@ -169,9 +169,9 @@ export default function GameRoom() {
             {/* Resign */}
             <button
               onClick={() => setResignConfirm(true)}
-              className="text-[11px] py-1.5 px-4 rounded border border-alabaster/20 bg-alabaster/5
-                         text-alabaster/60 font-cinzel hover:border-burgundy/60 hover:text-burgundy
-                         hover:bg-burgundy/10 transition-all duration-200"
+              className="text-[11px] py-1.5 px-4 rounded border border-burgundy/40 bg-burgundy/5
+                         text-burgundy font-cinzel hover:border-burgundy hover:bg-burgundy/15
+                         transition-all duration-200"
             >
               Resign
             </button>
@@ -183,8 +183,8 @@ export default function GameRoom() {
               className={`text-[11px] py-1.5 px-4 rounded border font-cinzel transition-all duration-200
                 ${
                   drawOffer === 'sent'
-                    ? 'border-gold/30 bg-gold/5 text-gold/50 cursor-not-allowed'
-                    : 'border-gold/40 bg-gold/10 text-gold/80 hover:border-gold hover:text-gold hover:bg-gold/20'
+                    ? 'border-gold/40 bg-gold/5 text-gold/60 cursor-not-allowed'
+                    : 'border-gold bg-gold/10 text-[#7A5214] hover:bg-gold/20 hover:border-[#5C3A0A]'
                 }`}
             >
               {drawOffer === 'sent' ? 'Draw Offered…' : 'Offer Draw'}
@@ -200,10 +200,10 @@ export default function GameRoom() {
               onChange={(e) => toggleGuides(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-8 h-4 bg-alabaster/20 rounded-full peer-checked:bg-gold/60 transition-colors duration-250" />
-            <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-alabaster rounded-full shadow peer-checked:translate-x-4 transition-transform duration-250" />
+            <div className="w-8 h-4 bg-stone-gray/30 rounded-full peer-checked:bg-gold transition-colors duration-250" />
+            <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow peer-checked:translate-x-4 transition-transform duration-250" />
           </div>
-          <span className="font-garamond text-[11px] text-alabaster/50">Guides</span>
+          <span className="font-garamond text-[11px] text-stone-gray">Guides</span>
         </label>
       </div>
 
