@@ -7,10 +7,6 @@ const SOUNDS = {
   lose:   '/sounds/lose.mp3',
 };
 
-/**
- * Returns a `play(name)` function.
- * Audio objects are lazily created and cached so there's no double-load.
- */
 export function useSounds() {
   const cache = useRef({});
 
@@ -25,7 +21,6 @@ export function useSounds() {
     const audio = cache.current[name];
     audio.currentTime = 0;
     audio.play().catch(() => {
-      // Autoplay blocked (user hasn't interacted yet) — ignore silently
     });
   }, []);
 

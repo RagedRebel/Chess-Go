@@ -4,16 +4,13 @@ import { parseFEN, getLegalMoves, toAlgebraic, fromAlgebraic } from './engine';
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
 
 export const useChessStore = create((set, get) => ({
-  // ── View ─────────────────────────────────────────────────────
-  screen: 'lobby', // 'lobby' | 'game'
+  screen: 'lobby', 
 
-  // ── Connection ───────────────────────────────────────────────
   ws: null,
   connected: false,
   error: null,
 
-  // ── Game state (from server) ─────────────────────────────────
-  gameState: null, // parsed via parseFEN
+  gameState: null, 
   fen: '',
   turn: '',
   roomCode: '',
@@ -22,36 +19,23 @@ export const useChessStore = create((set, get) => ({
   white: '',
   black: '',
   started: false,
-  lastMove: null, // { from: {row,col}, to: {row,col} }
+  lastMove: null, 
 
-  // ── Board interaction ────────────────────────────────────────
-  selectedSquare: null, // { row, col }
-  legalMoves: [],       // [{ row, col }, …]
-  promotionPending: null, // { from: {row,col}, to: {row,col} }
+  selectedSquare: null, 
+  legalMoves: [],       
+  promotionPending: null, 
 
-  // ── Result ───────────────────────────────────────────────────
-  gameOver: null, // { result, method }
+  gameOver: null, 
 
-  // ── Draw offer state ─────────────────────────────────────────
-  drawOffer: null, // null | 'sent' | 'received'
-  drawDeclined: false, // true briefly when opponent declines our offer
+  drawOffer: null, 
+  drawDeclined: false, 
 
-  // ── Preferences ──────────────────────────────────────────────
   showGuides: true,
-
-  // ═══════════════════════════════════════════════════════════════
-  //  ACTIONS
-  // ═══════════════════════════════════════════════════════════════
 
   setPlayerName: (name) => set({ playerName: name }),
   toggleGuides: (val) => set({ showGuides: val }),
 
-  // ── WebSocket lifecycle ──────────────────────────────────────
 
-  /**
-   * Opens a WebSocket connection.
-   * Returns a cleanup function (for React useEffect).
-   */
   connect: () => {
     let cancelled = false;
     let ws = null;
@@ -89,7 +73,6 @@ export const useChessStore = create((set, get) => ({
       set({ ws });
     }, 0);
 
-    // Cleanup (handles React 19 StrictMode double-mount)
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -104,7 +87,6 @@ export const useChessStore = create((set, get) => ({
     set({ ws: null, connected: false });
   },
 
-  // ── Outgoing messages ────────────────────────────────────────
 
   _sendMessage: (type, payload = {}) => {
     const { ws } = get();
@@ -128,7 +110,6 @@ export const useChessStore = create((set, get) => ({
     });
   },
 
-  // ── Incoming messages ────────────────────────────────────────
 
   _handleMessage: (msg) => {
     switch (msg.type) {
@@ -187,7 +168,6 @@ export const useChessStore = create((set, get) => ({
     }
   },
 
-  // ── Board interaction ────────────────────────────────────────
 
   selectSquare: (sq) => {
     const {
@@ -197,20 +177,17 @@ export const useChessStore = create((set, get) => ({
 
     if (!gameState || promotionPending || gameOver || !started) return;
 
-    // Not my turn?
     const myTurnChar = playerColor === 'white' ? 'w' : 'b';
     if (turn !== myTurnChar) return;
 
     const piece = gameState.board[sq.row][sq.col];
 
-    // ── A piece is already selected ──
     if (selectedSquare) {
       const isLegal = legalMoves.some((m) => m.row === sq.row && m.col === sq.col);
 
       if (isLegal) {
         const movingPiece = gameState.board[selectedSquare.row][selectedSquare.col];
 
-        // Pawn promotion?
         if (movingPiece?.type === 'pawn' && (sq.row === 0 || sq.row === 7)) {
           set({
             promotionPending: { from: selectedSquare, to: sq },
@@ -220,24 +197,20 @@ export const useChessStore = create((set, get) => ({
           return;
         }
 
-        // Normal move → send to server
         get()._makeMove(selectedSquare, sq);
         return;
       }
 
-      // Clicked another own piece → re-select
       if (piece && piece.color === gameState.currentTurn) {
         const moves = getLegalMoves(gameState, sq);
         set({ selectedSquare: sq, legalMoves: moves });
         return;
       }
 
-      // Deselect
       set({ selectedSquare: null, legalMoves: [] });
       return;
     }
 
-    // ── No selection yet ──
     if (piece && piece.color === gameState.currentTurn) {
       const moves = getLegalMoves(gameState, sq);
       set({ selectedSquare: sq, legalMoves: moves });
@@ -260,7 +233,6 @@ export const useChessStore = create((set, get) => ({
     set({ promotionPending: null });
   },
 
-  // ── Resign / Draw ────────────────────────────────────────────
 
   resign: () => {
     get()._sendMessage('RESIGN');
@@ -283,7 +255,6 @@ export const useChessStore = create((set, get) => ({
 
   clearDrawDeclined: () => set({ drawDeclined: false }),
 
-  // ── Navigation ───────────────────────────────────────────────
 
   backToLobby: () => {
     set({

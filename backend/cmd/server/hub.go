@@ -11,7 +11,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// --- WebSocket Upgrader ---
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -19,7 +18,6 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-// --- Message Types ---
 
 const (
 	MsgCreateRoom  = "CREATE_ROOM"
@@ -31,12 +29,11 @@ const (
 	MsgDrawDecline = "DRAW_DECLINE"
 	MsgGameState   = "GAME_STATE"
 	MsgGameOver    = "GAME_OVER"
-	MsgDrawOffered = "DRAW_OFFERED"  // server → client: opponent offered draw
-	MsgDrawDeclined = "DRAW_DECLINED" // server → client: opponent declined draw
+	MsgDrawOffered = "DRAW_OFFERED"  
+	MsgDrawDeclined = "DRAW_DECLINED" 
 	MsgError       = "ERROR"
 )
 
-// --- Message Structures ---
 
 type WSMessage struct {
 	Type    string          `json:"type"`
@@ -80,31 +77,28 @@ type ErrorPayload struct {
 	Message string `json:"message"`
 }
 
-// --- Client ---
 
 type Client struct {
 	Hub      *Hub
 	Conn     *websocket.Conn
 	Send     chan []byte
 	RoomCode string
-	Color    string // "white" or "black"
+	Color    string 
 	ID       string
 	Name     string
 	mu       sync.Mutex
 }
 
-// --- Room ---
 
 type Room struct {
 	Code          string
 	Game          *ChessGame
 	White         *Client
 	Black         *Client
-	DrawOfferedBy string // "" | "white" | "black"
+	DrawOfferedBy string 
 	mu            sync.Mutex
 }
 
-// --- Hub ---
 
 type Hub struct {
 	Rooms      map[string]*Room
@@ -140,7 +134,6 @@ func (h *Hub) Run() {
 					delete(h.Rooms, client.RoomCode)
 					log.Printf("Room %s deleted (empty)", client.RoomCode)
 				} else if opponent != nil && !room.Game.IsGameOver() {
-					// Opponent left during an active game — remaining player wins
 					gameOverPayload := GameOverPayload{
 						Result: opponent.Color,
 						Method: "opponent_left",
@@ -150,7 +143,6 @@ func (h *Hub) Run() {
 					opponent.sendGameOver(gameOverPayload)
 					delete(h.Rooms, room.Code)
 				} else {
-					// Game not yet started; just update state
 					notifyRoomState(room)
 				}
 				room.mu.Unlock()
@@ -161,7 +153,6 @@ func (h *Hub) Run() {
 	}
 }
 
-// --- Room Code Generation ---
 
 func generateRoomCode() string {
 	const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -172,7 +163,6 @@ func generateRoomCode() string {
 	return string(code)
 }
 
-// --- WebSocket Handler ---
 
 func ServeWS(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -194,7 +184,6 @@ func ServeWS(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	go client.readPump()
 }
 
-// --- Client Read/Write Pumps ---
 
 func (c *Client) readPump() {
 	defer func() {
@@ -236,7 +225,6 @@ func (c *Client) writePump() {
 	}
 }
 
-// --- Message Router ---
 
 func (c *Client) handleMessage(msg WSMessage) {
 	switch msg.Type {
@@ -273,7 +261,6 @@ func (c *Client) handleMessage(msg WSMessage) {
 	}
 }
 
-// --- Room Handlers ---
 
 func (c *Client) handleCreateRoom(payload CreateRoomPayload) {
 	c.Hub.mu.Lock()
@@ -285,7 +272,6 @@ func (c *Client) handleCreateRoom(payload CreateRoomPayload) {
 	}
 	c.Name = name
 
-	// Generate unique room code
 	code := generateRoomCode()
 	for _, exists := c.Hub.Rooms[code]; exists; _, exists = c.Hub.Rooms[code] {
 		code = generateRoomCode()
@@ -341,7 +327,6 @@ func (c *Client) handleJoinRoom(payload JoinRoomPayload) {
 
 	log.Printf("%s (client %s) joined room %s as %s", c.Name, c.ID, payload.RoomCode, c.Color)
 
-	// Notify both players
 	if room.White != nil {
 		room.White.sendGameState(room)
 	}
@@ -363,26 +348,22 @@ func (c *Client) handleMove(payload MovePayload) {
 	room.mu.Lock()
 	defer room.mu.Unlock()
 
-	// Check both players are present
 	if room.White == nil || room.Black == nil {
 		c.sendError("Waiting for opponent to join")
 		return
 	}
 
-	// Check game is not over
 	if room.Game.IsGameOver() {
 		c.sendError("Game is already over")
 		return
 	}
 
-	// Enforce turn order
 	currentTurn := room.Game.Turn()
 	if (currentTurn == "w" && c.Color != "white") || (currentTurn == "b" && c.Color != "black") {
 		c.sendError("It's not your turn")
 		return
 	}
 
-	// Attempt the move (server-side validation)
 	err := room.Game.Move(payload.From, payload.To, payload.Promotion)
 	if err != nil {
 		c.sendError("Illegal move: " + err.Error())
@@ -393,7 +374,6 @@ func (c *Client) handleMove(payload MovePayload) {
 
 	lastMove := &MovePayload{From: payload.From, To: payload.To, Promotion: payload.Promotion}
 
-	// Check for game over after the move
 	if room.Game.IsGameOver() {
 		result, method := room.Game.Outcome()
 		gameOverPayload := GameOverPayload{
@@ -413,7 +393,6 @@ func (c *Client) handleMove(payload MovePayload) {
 		return
 	}
 
-	// Broadcast updated game state
 	if room.White != nil {
 		room.White.sendGameStateWithMove(room, lastMove)
 	}
@@ -422,7 +401,6 @@ func (c *Client) handleMove(payload MovePayload) {
 	}
 }
 
-// --- Outgoing Message Helpers ---
 
 func (c *Client) sendGameState(room *Room) {
 	c.sendGameStateWithMove(room, nil)
@@ -488,7 +466,6 @@ func (c *Client) sendJSON(msgType string, payload interface{}) {
 	}
 }
 
-// --- Resign / Draw Handlers ---
 
 func (c *Client) handleResign() {
 	c.Hub.mu.RLock()
@@ -562,7 +539,7 @@ func (c *Client) handleDrawAccept() {
 	defer room.mu.Unlock()
 
 	if room.DrawOfferedBy == "" || room.DrawOfferedBy == c.Color {
-		return // no pending offer, or accepting own offer
+		return
 	}
 
 	room.DrawOfferedBy = ""
@@ -589,7 +566,6 @@ func (c *Client) handleDrawDecline() {
 
 	room.DrawOfferedBy = ""
 
-	// Notify the offerer that draw was declined
 	var offerer *Client
 	if c.Color == "white" {
 		offerer = room.Black
@@ -601,7 +577,6 @@ func (c *Client) handleDrawDecline() {
 	}
 }
 
-// notifyRoomState sends game state to all players in a room
 func notifyRoomState(room *Room) {
 	if room.White != nil {
 		room.White.sendGameState(room)

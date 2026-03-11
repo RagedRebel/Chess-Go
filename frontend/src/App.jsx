@@ -7,7 +7,6 @@ export default function App() {
   const screen = useChessStore((s) => s.screen);
   const error  = useChessStore((s) => s.error);
 
-  // Open WebSocket on mount, close on unmount
   useEffect(() => {
     return useChessStore.getState().connect();
   }, []);

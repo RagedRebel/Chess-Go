@@ -7,7 +7,6 @@ const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
 export default function ChessBoard({ boardWrapperRef }) {
-  // ── Store state ──────────────────────────────────────────────
   const gameState       = useChessStore((s) => s.gameState);
   const selectedSquare  = useChessStore((s) => s.selectedSquare);
   const legalMoves      = useChessStore((s) => s.legalMoves);
@@ -20,7 +19,6 @@ export default function ChessBoard({ boardWrapperRef }) {
   const board = gameState?.board;
   const flipped = playerColor === 'black';
 
-  // ── Responsive sizing ────────────────────────────────────────
   const [boardSize, setBoardSize] = useState(360);
 
   useEffect(() => {
@@ -40,7 +38,6 @@ export default function ChessBoard({ boardWrapperRef }) {
   const squareSize = boardSize / 8;
   const labelSize = Math.max(14, squareSize * 0.28);
 
-  // ── Display order (flip for black) ───────────────────────────
   const displayRows = useMemo(
     () => (flipped ? [...Array(8).keys()].reverse() : [...Array(8).keys()]),
     [flipped],
@@ -50,7 +47,6 @@ export default function ChessBoard({ boardWrapperRef }) {
     [flipped],
   );
 
-  // ── Helpers ──────────────────────────────────────────────────
   const isSelected = (r, c) =>
     selectedSquare?.row === r && selectedSquare?.col === c;
 
@@ -72,7 +68,6 @@ export default function ChessBoard({ boardWrapperRef }) {
 
   if (!board) return null;
 
-  // ── Render ───────────────────────────────────────────────────
   return (
     <div className="board-frame relative flex flex-col items-center">
       <div className="flex">
@@ -111,7 +106,6 @@ export default function ChessBoard({ boardWrapperRef }) {
                 const inCheck = isKingInCheck(row, col);
                 const hasPiece = !!piece;
 
-                // ── Square background ──
                 let bg;
                 if (selected) {
                   bg = 'rgba(197, 160, 89, 0.45)';

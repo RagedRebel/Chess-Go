@@ -10,7 +10,6 @@
  *                 hasMoved?: boolean }
  */
 
-// ── Constants ──────────────────────────────────────────────────
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
@@ -19,7 +18,6 @@ const PIECE_FROM_CHAR = {
   p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king',
 };
 
-// ── Coordinate helpers ─────────────────────────────────────────
 
 /** row/col (0-based) → algebraic ("e2"). */
 export function toAlgebraic(row, col) {
@@ -31,7 +29,6 @@ export function fromAlgebraic(sq) {
   return { row: 8 - parseInt(sq[1]), col: FILES.indexOf(sq[0]) };
 }
 
-// ── FEN parser ─────────────────────────────────────────────────
 
 /**
  * Parse a FEN string into a GameState object.
@@ -48,7 +45,6 @@ export function parseFEN(fen) {
   const halfMoveStr = parts[4] || '0';
   const fullMoveStr = parts[5] || '1';
 
-  // ── Board ──
   const board = Array.from({ length: 8 }, () => Array(8).fill(null));
   const rows = boardStr.split('/');
 
@@ -70,7 +66,6 @@ export function parseFEN(fen) {
     }
   }
 
-  // ── Castling rights → hasMoved flags ──
   const ca = castlingStr || '-';
 
   const setFlags = (row, kingSide, queenSide) => {
@@ -82,16 +77,14 @@ export function parseFEN(fen) {
     if (qR?.type === 'rook') qR.hasMoved = !queenSide;
   };
 
-  setFlags(7, ca.includes('K'), ca.includes('Q')); // white
-  setFlags(0, ca.includes('k'), ca.includes('q')); // black
+  setFlags(7, ca.includes('K'), ca.includes('Q')); 
+  setFlags(0, ca.includes('k'), ca.includes('q'));
 
-  // ── En passant ──
   let enPassantTarget;
   if (enPassantStr && enPassantStr !== '-') {
     enPassantTarget = fromAlgebraic(enPassantStr);
   }
 
-  // ── Assemble state ──
   const currentTurn = turnStr === 'w' ? 'white' : 'black';
 
   const state = {
@@ -100,7 +93,7 @@ export function parseFEN(fen) {
     enPassantTarget,
     halfMoveClock: parseInt(halfMoveStr) || 0,
     fullMoveNumber: parseInt(fullMoveStr) || 1,
-    status: 'playing', // updated below
+    status: 'playing', 
   };
 
   if (isInCheck(board, currentTurn)) {
@@ -120,7 +113,6 @@ function createEmptyState() {
   };
 }
 
-// ── Board utilities ────────────────────────────────────────────
 
 function inBounds(r, c) {
   return r >= 0 && r < 8 && c >= 0 && c < 8;
@@ -130,7 +122,6 @@ function cloneBoard(board) {
   return board.map((row) => row.map((cell) => (cell ? { ...cell } : null)));
 }
 
-// ── Pseudo-legal move generation ───────────────────────────────
 
 export function getPseudoLegalMoves(board, sq, enPassantTarget) {
   const piece = board[sq.row][sq.col];
@@ -218,7 +209,6 @@ export function getPseudoLegalMoves(board, sq, enPassantTarget) {
   return moves;
 }
 
-// ── Attack / check detection ───────────────────────────────────
 
 export function isSquareAttacked(board, sq, byColor) {
   for (let r = 0; r < 8; r++) {
@@ -249,7 +239,6 @@ export function isInCheck(board, color) {
   return isSquareAttacked(board, king, color === 'white' ? 'black' : 'white');
 }
 
-// ── Internal: apply move to board (for legality filtering) ─────
 
 function applyMoveToBoard(board, from, to, enPassantTarget) {
   const newBoard = cloneBoard(board);
@@ -259,7 +248,6 @@ function applyMoveToBoard(board, from, to, enPassantTarget) {
   newBoard[to.row][to.col] = piece;
   newBoard[from.row][from.col] = null;
 
-  // En passant capture
   if (
     piece.type === 'pawn' &&
     enPassantTarget?.row === to.row &&
@@ -268,18 +256,15 @@ function applyMoveToBoard(board, from, to, enPassantTarget) {
     newBoard[from.row][to.col] = null;
   }
 
-  // Castling — slide the rook
   if (piece.type === 'king') {
     const colDiff = to.col - from.col;
     if (Math.abs(colDiff) === 2) {
       if (colDiff === 2) {
-        // Kingside
         const rook = { ...newBoard[from.row][7] };
         rook.hasMoved = true;
         newBoard[from.row][5] = rook;
         newBoard[from.row][7] = null;
       } else {
-        // Queenside
         const rook = { ...newBoard[from.row][0] };
         rook.hasMoved = true;
         newBoard[from.row][3] = rook;
@@ -291,14 +276,7 @@ function applyMoveToBoard(board, from, to, enPassantTarget) {
   return newBoard;
 }
 
-// ── Legal-move generation ──────────────────────────────────────
 
-/**
- * All legal moves for the piece at `sq`.
- * @param {object} state  GameState (needs .board, .currentTurn, .enPassantTarget)
- * @param {{ row: number, col: number }} sq
- * @returns {{ row: number, col: number }[]}
- */
 export function getLegalMoves(state, sq) {
   const piece = state.board[sq.row][sq.col];
   if (!piece || piece.color !== state.currentTurn) return [];
@@ -308,21 +286,17 @@ export function getLegalMoves(state, sq) {
   const enemy = piece.color === 'white' ? 'black' : 'white';
 
   for (const to of pseudo) {
-    // Skip self-captures (shouldn't happen, but safety net)
     if (state.board[to.row][to.col]?.color === piece.color) continue;
 
-    // Ensure king is not left in check
     const testBoard = applyMoveToBoard(state.board, sq, to, state.enPassantTarget);
     if (!isInCheck(testBoard, piece.color)) {
       legal.push(to);
     }
   }
 
-  // ── Castling ──
   if (piece.type === 'king' && !piece.hasMoved && !isInCheck(state.board, piece.color)) {
     const row = piece.color === 'white' ? 7 : 0;
     if (sq.row === row && sq.col === 4) {
-      // Kingside (O-O)
       const kR = state.board[row][7];
       if (
         kR?.type === 'rook' && !kR.hasMoved &&
@@ -333,7 +307,6 @@ export function getLegalMoves(state, sq) {
         legal.push({ row, col: 6 });
       }
 
-      // Queenside (O-O-O)
       const qR = state.board[row][0];
       if (
         qR?.type === 'rook' && !qR.hasMoved &&

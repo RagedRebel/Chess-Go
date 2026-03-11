@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ================================================================
-   NEOCLASSICAL CHESS — Custom Styles
-   Marble textures, stone buttons, board frame, decorative motifs
-   ================================================================ */
 
 @layer base {
   html {

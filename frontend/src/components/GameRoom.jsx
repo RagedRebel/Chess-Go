@@ -34,12 +34,10 @@ export default function GameRoom() {
 
   const play = useSounds();
 
-  // ── Sound: move ───────────────────────────────────────────
   useEffect(() => {
     if (lastMove) play('move');
   }, [lastMove, play]);
 
-  // ── Sound: check ───────────────────────────────────────────
   const prevStatusRef = useRef(null);
   useEffect(() => {
     const status = gameState?.status;
@@ -49,11 +47,10 @@ export default function GameRoom() {
     prevStatusRef.current = status;
   }, [gameState?.status, play]);
 
-  // ── Sound: game over ───────────────────────────────────────
   useEffect(() => {
     if (!gameOver) return;
     const isDraw = gameOver.result === 'draw';
-    if (isDraw) return; // no win/lose sound for draws
+    if (isDraw) return; 
     const won = gameOver.result === playerColor;
     play(won ? 'win' : 'lose');
   }, [gameOver, playerColor, play]);

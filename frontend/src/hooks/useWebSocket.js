@@ -10,10 +10,6 @@ export default function useWebSocket() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // React 19 StrictMode double-invokes effects: mount → unmount → mount.
-    // By deferring WebSocket creation to a microtask, the first mount's
-    // cleanup (which sets cancelled = true) runs BEFORE the socket is
-    // actually created, so we skip the doomed connection entirely.
     let cancelled = false;
     let ws = null;
 
