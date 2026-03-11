@@ -1,5 +1,6 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { useChessStore } from '../chess/useChessStore';
+import { getCapturedPieces } from '../chess/engine';
 import ChessBoard from './ChessBoard';
 import PlayerInfo from './PlayerInfo';
 import GameOverModal from './GameOverModal';
@@ -25,6 +26,7 @@ export default function GameRoom() {
   const drawOffer       = useChessStore((s) => s.drawOffer);
   const drawDeclined    = useChessStore((s) => s.drawDeclined);
   const clearDrawDeclined = useChessStore((s) => s.clearDrawDeclined);
+  const opponentDisconnected = useChessStore((s) => s.opponentDisconnected);
 
   const lastMove    = useChessStore((s) => s.lastMove);
 
@@ -58,6 +60,15 @@ export default function GameRoom() {
     play(won ? 'win' : 'lose');
   }, [gameOver, playerColor, play]);
 
+  const captures = useMemo(
+    () => (gameState?.board ? getCapturedPieces(gameState.board) : { capturedByWhite: {}, capturedByBlack: {} }),
+    [gameState],
+  );
+  const capturedBy = {
+    white: captures.capturedByWhite,
+    black: captures.capturedByBlack,
+  };
+
   if (!gameState) return null;
 
   const inCheck = gameState.status === 'check';
@@ -74,6 +85,15 @@ export default function GameRoom() {
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden py-2 px-4 box-border">
+
+      {/* ── Opponent disconnected banner ─────────────────── */}
+      {opponentDisconnected && !gameOver && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-slide-up pointer-events-none">
+          <div className="bg-navy/95 text-gold font-cinzel px-6 py-2.5 rounded shadow-stone-lg border border-gold/30 text-sm tracking-wide text-center">
+            Opponent disconnected — waiting for them to reconnect (60 s)…
+          </div>
+        </div>
+      )}
 
       {/* ── Top bar ─────────────────────────────────────── */}
       <div className="flex-shrink-0 flex items-center justify-center gap-4 mb-1 animate-fade-in">
@@ -111,7 +131,9 @@ export default function GameRoom() {
               name={topPlayer.name}
               color={topPlayer.color}
               isActive={started && turn === topPlayer.color[0]}
+              started={started}
               position="top"
+              captured={capturedBy[topPlayer.color]}
             />
           </div>
 
@@ -124,7 +146,9 @@ export default function GameRoom() {
               name={bottomPlayer.name}
               color={bottomPlayer.color}
               isActive={started && turn === bottomPlayer.color[0]}
+              started={started}
               position="bottom"
+              captured={capturedBy[bottomPlayer.color]}
             />
           </div>
         </div>

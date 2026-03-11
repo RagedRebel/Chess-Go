@@ -294,12 +294,46 @@ function applyMoveToBoard(board, from, to, enPassantTarget) {
 // ── Legal-move generation ──────────────────────────────────────
 
 /**
+ * Compute captured pieces for both sides by comparing current board piece
+ * counts to the standard starting counts.
+ *
+ * @param {Array} board  8×8 board from parseFEN
+ * @returns {{ capturedByWhite: object, capturedByBlack: object }}
+ *   Each value is a map of piece-type → count of pieces that player captured.
+ */
+export function getCapturedPieces(board) {
+  const initial = { pawn: 8, knight: 2, bishop: 2, rook: 2, queen: 1 };
+  const counts = {
+    white: { pawn: 0, knight: 0, bishop: 0, rook: 0, queen: 0 },
+    black: { pawn: 0, knight: 0, bishop: 0, rook: 0, queen: 0 },
+  };
+
+  for (const row of board) {
+    for (const piece of row) {
+      if (piece && counts[piece.color]?.[piece.type] !== undefined) {
+        counts[piece.color][piece.type]++;
+      }
+    }
+  }
+
+  const capturedByWhite = {}; // black pieces white has taken
+  const capturedByBlack = {}; // white pieces black has taken
+  for (const type of Object.keys(initial)) {
+    capturedByWhite[type] = Math.max(0, initial[type] - counts.black[type]);
+    capturedByBlack[type] = Math.max(0, initial[type] - counts.white[type]);
+  }
+
+  return { capturedByWhite, capturedByBlack };
+}
+
+/**
  * All legal moves for the piece at `sq`.
  * @param {object} state  GameState (needs .board, .currentTurn, .enPassantTarget)
  * @param {{ row: number, col: number }} sq
  * @returns {{ row: number, col: number }[]}
  */
 export function getLegalMoves(state, sq) {
+
   const piece = state.board[sq.row][sq.col];
   if (!piece || piece.color !== state.currentTurn) return [];
 

@@ -4,6 +4,7 @@ import LaurelWreath from './LaurelWreath';
 
 export default function Lobby() {
   const connected    = useChessStore((s) => s.connected);
+  const reconnecting = useChessStore((s) => s.reconnecting);
   const showGuides   = useChessStore((s) => s.showGuides);
   const toggleGuides = useChessStore((s) => s.toggleGuides);
   const createRoom   = useChessStore((s) => s.createRoom);
@@ -57,11 +58,11 @@ export default function Lobby() {
       <div className="flex items-center gap-2 mb-5">
         <span
           className={`inline-block w-2.5 h-2.5 rounded-full transition-colors duration-350 ${
-            connected ? 'bg-green-500' : 'bg-red-500'
+            connected ? 'bg-green-500' : reconnecting ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
           }`}
         />
         <span className="font-garamond text-sm text-alabaster/50">
-          {connected ? 'Connected to server' : 'Connecting…'}
+          {connected ? 'Connected to server' : reconnecting ? 'Reconnecting…' : 'Connecting…'}
         </span>
       </div>
 
