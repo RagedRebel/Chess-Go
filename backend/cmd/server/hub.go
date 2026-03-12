@@ -161,12 +161,7 @@ func (h *Hub) Run() {
 					stopTimer(room.blackReconTimer)
 					delete(h.Rooms, client.RoomCode)
 					log.Printf("Room %s deleted (empty)", client.RoomCode)
-				} else if opponent != nil && !room.Game.IsGameOver() {
-					gameOverPayload := GameOverPayload{
-						Result: opponent.Color,
-						Method: "opponent_left",
-						FEN:    room.Game.FEN(),
-				}} else if disconnectedColor != "" && room.Started && !room.Game.IsGameOver() {
+				}  else if disconnectedColor != "" && room.Started && !room.Game.IsGameOver() {
 					roomCode := room.Code
 					log.Printf("Room %s: %s disconnected, starting 60 s reconnect grace period", room.Code, disconnectedColor)
 
