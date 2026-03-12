@@ -4,6 +4,7 @@ import LaurelWreath from './LaurelWreath';
 
 export default function Lobby() {
   const connected    = useChessStore((s) => s.connected);
+  const reconnecting = useChessStore((s) => s.reconnecting);
   const showGuides   = useChessStore((s) => s.showGuides);
   const toggleGuides = useChessStore((s) => s.toggleGuides);
   const createRoom   = useChessStore((s) => s.createRoom);
@@ -57,11 +58,11 @@ export default function Lobby() {
       <div className="flex items-center gap-2 mb-5">
         <span
           className={`inline-block w-2.5 h-2.5 rounded-full transition-colors duration-350 ${
-            connected ? 'bg-green-500' : 'bg-red-500'
+            connected ? 'bg-green-600' : reconnecting ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
           }`}
         />
-        <span className="font-garamond text-sm text-alabaster/50">
-          {connected ? 'Connected to server' : 'Connecting…'}
+        <span className="font-garamond text-sm text-stone-gray">
+          {connected ? 'Connected to server' : reconnecting ? 'Reconnecting…' : 'Connecting…'}
         </span>
       </div>
 
@@ -70,7 +71,7 @@ export default function Lobby() {
         <div className="flex flex-col items-center gap-5 animate-slide-up w-full max-w-xs">
           {/* Player Name */}
           <div className="w-full">
-            <label className="block font-cinzel text-[11px] uppercase tracking-widest text-alabaster/50 mb-1.5 text-center">
+            <label className="block font-cinzel text-[11px] uppercase tracking-widest text-stone-gray mb-1.5 text-center">
               Your Name <span className="text-burgundy">*</span>
             </label>
             <input
@@ -80,13 +81,13 @@ export default function Lobby() {
               onBlur={handleNameBlur}
               placeholder="Enter your name to play"
               maxLength={20}
-              className={`w-full text-center font-playfair text-base bg-navy/60 border rounded px-4 py-2.5 text-alabaster
-                         placeholder:text-alabaster/30 focus:outline-none focus:shadow-gold-glow
+              className={`w-full text-center font-playfair text-base bg-white border-2 rounded px-4 py-2.5 text-alabaster
+                         placeholder:text-stone-gray/60 focus:outline-none focus:shadow-gold-glow
                          transition-all duration-250 ease-dignified
                          ${
                            nameError
-                             ? 'border-burgundy/70 focus:border-burgundy'
-                             : 'border-gold/30 focus:border-gold'
+                             ? 'border-burgundy focus:border-burgundy'
+                             : 'border-stone-gray/50 focus:border-gold'
                          }`}
             />
             {nameError && (
@@ -144,7 +145,7 @@ export default function Lobby() {
           onSubmit={handleJoin}
           className="flex flex-col items-center gap-4 animate-slide-up"
         >
-          <label className="font-cinzel text-sm uppercase tracking-widest text-alabaster/70">
+          <label className="font-cinzel text-sm uppercase tracking-widest text-stone-gray">
             Enter Room Code
           </label>
           <input
@@ -153,8 +154,8 @@ export default function Lobby() {
             onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
             placeholder="e.g. A3K9Z2"
             maxLength={6}
-            className="w-48 text-center font-cinzel text-2xl tracking-[0.3em] bg-navy/60 border-2 border-gold/40
-                       rounded px-4 py-3 text-alabaster placeholder:text-alabaster/30
+            className="w-48 text-center font-cinzel text-2xl tracking-[0.3em] bg-white border-2 border-stone-gray/50
+                       rounded px-4 py-3 text-alabaster placeholder:text-stone-gray/50
                        focus:outline-none focus:border-gold focus:shadow-gold-glow
                        transition-all duration-250 ease-dignified"
             autoFocus

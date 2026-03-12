@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -30,8 +31,13 @@ const (
 	MsgGameState   = "GAME_STATE"
 	MsgGameOver    = "GAME_OVER"
 	MsgDrawOffered = "DRAW_OFFERED"  
-	MsgDrawDeclined = "DRAW_DECLINED" 
-	MsgError       = "ERROR"
+	MsgDrawDeclined         = "DRAW_DECLINED" 
+	MsgError               = "ERROR"
+	MsgRejoinRoom           = "REJOIN_ROOM"
+	MsgPing                = "PING"
+	MsgPong                = "PONG"
+	MsgOpponentDisconnected = "OPPONENT_DISCONNECTED"
+	MsgOpponentReconnected  = "OPPONENT_RECONNECTED"
 )
 
 
@@ -77,6 +83,12 @@ type ErrorPayload struct {
 	Message string `json:"message"`
 }
 
+type RejoinRoomPayload struct {
+	RoomCode string `json:"roomCode"`
+	Color    string `json:"color"`
+	Name     string `json:"name"`
+}
+
 
 type Client struct {
 	Hub      *Hub
@@ -91,12 +103,17 @@ type Client struct {
 
 
 type Room struct {
-	Code          string
-	Game          *ChessGame
-	White         *Client
-	Black         *Client
-	DrawOfferedBy string 
-	mu            sync.Mutex
+	Code            string
+	Game            *ChessGame
+	White           *Client
+	Black           *Client
+	WhiteName       string 
+	BlackName       string 
+	Started         bool   
+	DrawOfferedBy   string 
+	mu              sync.Mutex
+	whiteReconTimer *time.Timer
+	blackReconTimer *time.Timer
 }
 
 
@@ -113,6 +130,12 @@ func NewHub() *Hub {
 	}
 }
 
+func stopTimer(t *time.Timer) {
+	if t != nil {
+		t.Stop()
+	}
+}
+
 func (h *Hub) Run() {
 	for {
 		select {
@@ -121,16 +144,21 @@ func (h *Hub) Run() {
 			if room, ok := h.Rooms[client.RoomCode]; ok {
 				room.mu.Lock()
 
+				disconnectedColor := ""
 				var opponent *Client
 				if room.White == client {
 					room.White = nil
+					disconnectedColor = "white"
 					opponent = room.Black
 				} else if room.Black == client {
 					room.Black = nil
+					disconnectedColor = "black"
 					opponent = room.White
 				}
 
 				if room.White == nil && room.Black == nil {
+					stopTimer(room.whiteReconTimer)
+					stopTimer(room.blackReconTimer)
 					delete(h.Rooms, client.RoomCode)
 					log.Printf("Room %s deleted (empty)", client.RoomCode)
 				} else if opponent != nil && !room.Game.IsGameOver() {
@@ -138,10 +166,58 @@ func (h *Hub) Run() {
 						Result: opponent.Color,
 						Method: "opponent_left",
 						FEN:    room.Game.FEN(),
+				}} else if disconnectedColor != "" && room.Started && !room.Game.IsGameOver() {
+					roomCode := room.Code
+					log.Printf("Room %s: %s disconnected, starting 60 s reconnect grace period", room.Code, disconnectedColor)
+
+					if opponent != nil {
+						opponent.sendJSON(MsgOpponentDisconnected, map[string]string{})
 					}
-					log.Printf("Room %s: %s wins — opponent left", room.Code, opponent.Color)
-					opponent.sendGameOver(gameOverPayload)
-					delete(h.Rooms, room.Code)
+
+					if disconnectedColor == "white" {
+						stopTimer(room.whiteReconTimer)
+					} else {
+						stopTimer(room.blackReconTimer)
+					}
+
+					timer := time.AfterFunc(60*time.Second, func() {
+						h.mu.Lock()
+						defer h.mu.Unlock()
+						r, exists := h.Rooms[roomCode]
+						if !exists {
+							return
+						}
+						r.mu.Lock()
+						defer r.mu.Unlock()
+
+						slotEmpty := (disconnectedColor == "white" && r.White == nil) ||
+							(disconnectedColor == "black" && r.Black == nil)
+						if slotEmpty && !r.Game.IsGameOver() {
+							winnerColor := "black"
+							if disconnectedColor == "black" {
+								winnerColor = "white"
+							}
+							payload := GameOverPayload{
+								Result: winnerColor,
+								Method: "opponent_left",
+								FEN:    r.Game.FEN(),
+							}
+							log.Printf("Room %s: %s wins — %s timed out reconnecting", r.Code, winnerColor, disconnectedColor)
+							if r.White != nil {
+								r.White.sendGameOver(payload)
+							}
+							if r.Black != nil {
+								r.Black.sendGameOver(payload)
+							}
+							delete(h.Rooms, r.Code)
+						}
+					})
+
+					if disconnectedColor == "white" {
+						room.whiteReconTimer = timer
+					} else {
+						room.blackReconTimer = timer
+					}
 				} else {
 					notifyRoomState(room)
 				}
@@ -248,6 +324,15 @@ func (c *Client) handleMessage(msg WSMessage) {
 			return
 		}
 		c.handleMove(payload)
+	case MsgRejoinRoom:
+		var payload RejoinRoomPayload
+		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+			c.sendError("Invalid rejoin room payload")
+			return
+		}
+		c.handleRejoinRoom(payload)
+	case MsgPing:
+		c.handlePing()
 	case MsgResign:
 		c.handleResign()
 	case MsgDrawOffer:
@@ -278,9 +363,10 @@ func (c *Client) handleCreateRoom(payload CreateRoomPayload) {
 	}
 
 	room := &Room{
-		Code:  code,
-		Game:  NewChessGame(),
-		White: c,
+		Code:      code,
+		Game:      NewChessGame(),
+		White:     c,
+		WhiteName: c.Name,
 	}
 
 	c.Hub.Rooms[code] = room
@@ -324,6 +410,12 @@ func (c *Client) handleJoinRoom(payload JoinRoomPayload) {
 	}
 
 	c.RoomCode = payload.RoomCode
+	room.Started = true
+	if c.Color == "black" {
+		room.BlackName = c.Name
+	} else {
+		room.WhiteName = c.Name
+	}
 
 	log.Printf("%s (client %s) joined room %s as %s", c.Name, c.ID, payload.RoomCode, c.Color)
 
@@ -416,7 +508,7 @@ func (c *Client) sendGameStateWithMove(room *Room, lastMove *MovePayload) {
 		blackName = room.Black.Name
 	}
 
-	started := room.White != nil && room.Black != nil
+	started := room.Started
 
 	payload := GameStatePayload{
 		FEN:         room.Game.FEN(),
@@ -464,6 +556,81 @@ func (c *Client) sendJSON(msgType string, payload interface{}) {
 	default:
 		log.Printf("Client %s send buffer full, dropping message", c.ID)
 	}
+}
+
+
+func (c *Client) handleRejoinRoom(payload RejoinRoomPayload) {
+	c.Hub.mu.Lock()
+	defer c.Hub.mu.Unlock()
+
+	room, exists := c.Hub.Rooms[payload.RoomCode]
+	if !exists {
+		c.sendError("Room not found. The game may have ended — please start a new one.")
+		return
+	}
+
+	room.mu.Lock()
+	defer room.mu.Unlock()
+
+	if room.Game.IsGameOver() {
+		c.sendError("This game has already ended.")
+		return
+	}
+
+	requestedColor := strings.ToLower(strings.TrimSpace(payload.Color))
+	name := strings.TrimSpace(payload.Name)
+
+	switch requestedColor {
+	case "white":
+		if room.White != nil {
+			c.sendError("Cannot rejoin: that slot is already occupied.")
+			return
+		}
+		if name == "" {
+			name = room.WhiteName
+		}
+		c.Name = name
+		c.Color = "white"
+		c.RoomCode = payload.RoomCode
+		room.White = c
+		room.WhiteName = name
+		stopTimer(room.whiteReconTimer)
+		room.whiteReconTimer = nil
+	case "black":
+		if room.Black != nil {
+			c.sendError("Cannot rejoin: that slot is already occupied.")
+			return
+		}
+		if name == "" {
+			name = room.BlackName
+		}
+		c.Name = name
+		c.Color = "black"
+		c.RoomCode = payload.RoomCode
+		room.Black = c
+		room.BlackName = name
+		stopTimer(room.blackReconTimer)
+		room.blackReconTimer = nil
+	default:
+		c.sendError("Invalid colour for rejoin.")
+		return
+	}
+
+	log.Printf("%s (client %s) rejoined room %s as %s", c.Name, c.ID, payload.RoomCode, c.Color)
+
+	c.sendGameState(room)
+
+	if c.Color == "white" && room.Black != nil {
+		room.Black.sendJSON(MsgOpponentReconnected, map[string]string{})
+		room.Black.sendGameState(room)
+	} else if c.Color == "black" && room.White != nil {
+		room.White.sendJSON(MsgOpponentReconnected, map[string]string{})
+		room.White.sendGameState(room)
+	}
+}
+
+func (c *Client) handlePing() {
+	c.sendJSON(MsgPong, map[string]string{})
 }
 
 

@@ -17,9 +17,9 @@ export default function PromotionModal() {
   const color = useChessStore((s) => s.gameState?.currentTurn ?? 'white');
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center z-50 bg-obsidian/70 rounded-sm">
+    <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/55 rounded-sm">
       <div
-        className="bg-gradient-to-b from-[#1a1410] to-[#0f0d0a] border border-gold/40 rounded-xl p-4 shadow-2xl"
+        className="bg-navy border border-gold/40 rounded-xl p-4 shadow-2xl"
         style={{ boxShadow: '0 12px 40px rgba(0,0,0,0.7), 0 0 20px rgba(197,160,89,0.1)' }}
       >
         <p className="text-center font-cinzel text-xs uppercase tracking-widest text-gold/80 mb-3">
@@ -30,8 +30,8 @@ export default function PromotionModal() {
             <button
               key={notation}
               className="flex flex-col items-center justify-center w-16 h-16 rounded-lg
-                         bg-navy/80 hover:bg-gold/20
-                         border border-gold/20 hover:border-gold/60
+                         bg-navy hover:bg-gold/15
+                         border border-gold/25 hover:border-gold/70
                          transition-all duration-200 cursor-pointer"
               onClick={() => completePromotion(notation)}
               title={label}

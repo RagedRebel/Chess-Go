@@ -3,12 +3,42 @@ import { parseFEN, getLegalMoves, toAlgebraic, fromAlgebraic } from './engine';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
 
+const SESSION_KEY = 'chessgo_session';
+
+function saveSession(roomCode, playerColor, playerName) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ roomCode, playerColor, playerName }));
+  } catch (_) {}
+}
+
+function loadSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (s.roomCode && s.playerColor) {
+      return { roomCode: s.roomCode, color: s.playerColor, name: s.playerName || '' };
+    }
+  } catch (_) {}
+  return null;
+}
+
+function clearSession() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch (_) {}
+}
+
 export const useChessStore = create((set, get) => ({
   screen: 'lobby', 
 
   ws: null,
   connected: false,
+  reconnecting: false,         
+  opponentDisconnected: false, 
   error: null,
+  _manualDisconnect: false,
+  _awaitingRejoin: false,
 
   gameState: null, 
   fen: '',
@@ -36,29 +66,69 @@ export const useChessStore = create((set, get) => ({
   toggleGuides: (val) => set({ showGuides: val }),
 
 
+  /**
+   * Opens a WebSocket connection with automatic reconnection and keep-alive ping.
+   * Returns a cleanup function (for React useEffect).
+   */
   connect: () => {
     let cancelled = false;
     let ws = null;
+    let reconnectTimer = null;
+    let pingInterval = null;
+    let attempt = 0;
+    const MAX_ATTEMPTS = 15;
 
-    const timer = setTimeout(() => {
+    const tryConnect = () => {
       if (cancelled) return;
 
       ws = new WebSocket(WS_URL);
+      set({ ws });
 
       ws.onopen = () => {
-        if (cancelled) return;
-        set({ connected: true, error: null, ws });
+        if (cancelled) { ws.close(); return; }
+        attempt = 0;
+        clearInterval(pingInterval);
+        set({ connected: true, error: null, ws, reconnecting: false });
+
+        const session = loadSession();
+        if (session) {
+          ws.send(JSON.stringify({ type: 'REJOIN_ROOM', payload: session }));
+          set({ _awaitingRejoin: true });
+        }
+
+        pingInterval = setInterval(() => {
+          const currentWs = get().ws;
+          if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+            currentWs.send(JSON.stringify({ type: 'PING', payload: {} }));
+          }
+        }, 9 * 60 * 1000);
       };
 
       ws.onclose = () => {
         if (cancelled) return;
+        clearInterval(pingInterval);
+        pingInterval = null;
         set({ connected: false, ws: null });
+
+        if (get()._manualDisconnect) {
+          set({ _manualDisconnect: false, reconnecting: false });
+          return;
+        }
+
+        if (attempt < MAX_ATTEMPTS) {
+          const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
+          attempt++;
+          set({
+            reconnecting: true,
+            error: `Connection lost. Reconnecting\u2026 (${attempt}/${MAX_ATTEMPTS})`,
+          });
+          reconnectTimer = setTimeout(tryConnect, delay);
+        } else {
+          set({ reconnecting: false, error: 'Could not reconnect. Please refresh the page.' });
+        }
       };
 
-      ws.onerror = () => {
-        if (cancelled) return;
-        set({ error: 'Connection lost. Please refresh the page.', connected: false });
-      };
+      ws.onerror = () => { /* onclose fires after onerror; reconnect logic lives there */ };
 
       ws.onmessage = (event) => {
         if (cancelled) return;
@@ -69,22 +139,25 @@ export const useChessStore = create((set, get) => ({
           console.error('Failed to parse WS message:', e);
         }
       };
+    };
 
-      set({ ws });
-    }, 0);
+    const initTimer = setTimeout(tryConnect, 0);
 
     return () => {
       cancelled = true;
-      clearTimeout(timer);
+      clearTimeout(initTimer);
+      clearTimeout(reconnectTimer);
+      clearInterval(pingInterval);
       if (ws) ws.close();
-      set({ ws: null, connected: false });
+      set({ ws: null, connected: false, reconnecting: false });
     };
   },
 
   disconnect: () => {
+    set({ _manualDisconnect: true });
     const { ws } = get();
     if (ws) ws.close();
-    set({ ws: null, connected: false });
+    set({ ws: null, connected: false, reconnecting: false });
   },
 
 
@@ -140,14 +213,34 @@ export const useChessStore = create((set, get) => ({
           selectedSquare: null,
           legalMoves: [],
           promotionPending: null,
+          opponentDisconnected: false,
+          _awaitingRejoin: false,
         });
+
+        if (p.started) {
+          const myName = p.playerColor === 'white' ? p.white : p.black;
+          saveSession(p.roomCode, p.playerColor, myName);
+        }
         break;
       }
       case 'GAME_OVER': {
-        set({ gameOver: msg.payload, drawOffer: null });
+        clearSession();
+        set({ gameOver: msg.payload, drawOffer: null, opponentDisconnected: false });
         break;
       }
       case 'ERROR': {
+        if (get()._awaitingRejoin) {
+          clearSession();
+          set({
+            _awaitingRejoin: false,
+            screen: 'lobby',
+            gameState: null,
+            gameOver: null,
+            roomCode: '',
+            started: false,
+            opponentDisconnected: false,
+          });
+        }
         set({ error: msg.payload.message });
         setTimeout(() => {
           set((s) => (s.error === msg.payload.message ? { error: null } : {}));
@@ -161,6 +254,17 @@ export const useChessStore = create((set, get) => ({
       case 'DRAW_DECLINED': {
         const wasOfferer = get().drawOffer === 'sent';
         set({ drawOffer: null, drawDeclined: wasOfferer });
+        break;
+      }
+      case 'OPPONENT_DISCONNECTED': {
+        set({ opponentDisconnected: true });
+        break;
+      }
+      case 'OPPONENT_RECONNECTED': {
+        set({ opponentDisconnected: false, error: null });
+        break;
+      }
+      case 'PONG': {
         break;
       }
       default:
@@ -257,6 +361,7 @@ export const useChessStore = create((set, get) => ({
 
 
   backToLobby: () => {
+    clearSession();
     set({
       screen: 'lobby',
       gameState: null,
@@ -269,6 +374,8 @@ export const useChessStore = create((set, get) => ({
       promotionPending: null,
       roomCode: '',
       started: false,
+      opponentDisconnected: false,
+      reconnecting: false,
       fen: '',
       turn: '',
       white: '',
